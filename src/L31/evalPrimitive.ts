@@ -32,7 +32,94 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     proc.op === "boolean?" ? makeOk(typeof (args[0]) === 'boolean') :
     proc.op === "symbol?" ? makeOk(isSymbolSExp(args[0])) :
     proc.op === "string?" ? makeOk(isString(args[0])) :
-    makeFailure(`Bad primitive op: ${format(proc.op)}`);
+
+    // ADDED: New dictionary primitives
+    proc.op === "dict" ? evalDict(args) :
+    proc.op === "get" ? evalGet(args) :
+    proc.op === "dict?" ? makeOk(isDict(args[0])) :
+
+    makeFailure(`Unknown primitive: ${proc.op}`);
+
+// ADDED: Checks if a value is a dictionary structure (a proper list).
+const isDict = (v: any): boolean =>
+    isCompoundSExp(v) || isEmptySExp(v);
+
+// ADDED: Implementation of (dict <lit-exp>)
+const evalDict = (args: Value[]): Result<Value> => {
+    if (args.length !== 1) {
+        return makeFailure("dict expects exactly one argument");
+    }
+    const quoted = args[0];
+
+    if (!isCompoundSExp(quoted)) {
+        return makeFailure("dict expects a quoted list of pairs");
+    }
+
+    // Walk through the linked list
+    let current: Value = quoted;
+    while (!isEmptySExp(current)) {
+        if (!isCompoundSExp(current)) {
+            return makeFailure("dict expects a proper list");
+        }
+
+        const pair = current.val1;
+        if (!isCompoundSExp(pair)) {
+            return makeFailure("Each element inside dict must be a pair");
+        }
+
+        if (!isSymbolSExp(pair.val1)) {
+            return makeFailure("Each key must be a symbol");
+        }
+
+        // Key is pair.val1
+        // Value is pair.val2
+        // No more validation required for the value itself.
+
+        current = current.val2; // Move to next in the list
+    }
+
+    // Successfully validated the dictionary
+    return makeOk(quoted);
+};
+
+// ADDED: Implementation of (get <dict-exp> <key-exp>)
+const evalGet = (args: Value[]): Result<Value> => {
+    if (args.length !== 2) {
+        return makeFailure("get expects exactly two arguments");
+    }
+
+    const dict = args[0];
+    const key = args[1];
+
+    if (!isCompoundSExp(dict)) {
+        return makeFailure("First argument to get must be a dictionary (CompoundSExp)");
+    }
+
+    if (!isSymbolSExp(key)) {
+        return makeFailure("Second argument to get must be a symbol");
+    }
+
+    // Walk the list to find the key
+    let current: Value = dict;
+    while (!isEmptySExp(current)) {
+        if (!isCompoundSExp(current)) {
+            return makeFailure("Malformed dictionary (not a proper list)");
+        }
+
+        const pair = current.val1;
+        if (!isCompoundSExp(pair)) {
+            return makeFailure("Dictionary entries must be pairs");
+        }
+
+        if (isSymbolSExp(pair.val1) && pair.val1.val === key.val) {
+            return makeOk(pair.val2);
+        }
+
+        current = current.val2; // Move to next pair
+    }
+
+    return makeFailure(`Key '${key.val}' not found in dictionary`);
+};
 
 const minusPrim = (args: Value[]): Result<number> => {
     // TODO complete
@@ -95,3 +182,4 @@ export const listPrim = (vals: List<Value>): EmptySExp | CompoundSExp =>
 
 const isPairPrim = (v: Value): boolean =>
     isCompoundSExp(v);
+
