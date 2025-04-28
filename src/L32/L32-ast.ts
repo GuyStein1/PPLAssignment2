@@ -48,7 +48,8 @@ import { Sexp, Token } from "s-expression";
 export type Exp = DefineExp | CExp;
 export type AtomicExp = NumExp | BoolExp | StrExp | PrimOp | VarRef;
 export type CompoundExp = AppExp | IfExp | ProcExp | LetExp | LitExp;
-export type CExp =  AtomicExp | CompoundExp;
+// ADDED: Dictionary special form
+export type CExp =  AtomicExp | CompoundExp | DictExp;
 
 export type Program = {tag: "Program"; exps: Exp[]; }
 export type DefineExp = {tag: "DefineExp"; var: VarDecl; val: CExp; }
@@ -66,6 +67,9 @@ export type Binding = {tag: "Binding"; var: VarDecl; val: CExp; }
 export type LetExp = {tag: "LetExp"; bindings: Binding[]; body: CExp[]; }
 // L3
 export type LitExp = {tag: "LitExp"; val: SExpValue; }
+
+//ADDED: Dictionary special form
+export type DictExp = { tag: "DictExp"; records: { key: string; val: CExp }[] }; 
 
 // Type value constructors for disjoint types
 export const makeProgram = (exps: Exp[]): Program => ({tag: "Program", exps: exps});
@@ -92,6 +96,10 @@ export const makeLetExp = (bindings: Binding[], body: CExp[]): LetExp =>
 export const makeLitExp = (val: SExpValue): LitExp =>
     ({tag: "LitExp", val: val});
 
+//ADDED: Dictionary special form
+export const makeDictExp = (records: { key: string; val: CExp }[]): DictExp =>
+    ({ tag: "DictExp", records: records });
+
 // Type predicates for disjoint types
 export const isProgram = (x: any): x is Program => x.tag === "Program";
 export const isDefineExp = (x: any): x is DefineExp => x.tag === "DefineExp";
@@ -110,6 +118,9 @@ export const isBinding = (x: any): x is Binding => x.tag === "Binding";
 export const isLetExp = (x: any): x is LetExp => x.tag === "LetExp";
 // L3
 export const isLitExp = (x: any): x is LitExp => x.tag === "LitExp";
+
+//ADDED: Dictionary special form
+export const isDictExp = (x: any): x is DictExp => x.tag === "DictExp";
 
 // Type predicates for type unions
 export const isExp = (x: any): x is Exp => isDefineExp(x) || isCExp(x);
@@ -302,6 +313,11 @@ const unparseProcExp = (pe: ProcExp): string =>
 const unparseLetExp = (le: LetExp) : string => 
     `(let (${map((b: Binding) => `(${b.var.var} ${unparseL32(b.val)})`, le.bindings).join(" ")}) ${unparseLExps(le.body)})`
 
+// ADDED: Dictionary special form
+const unparseDictExp = (de: DictExp): string =>
+    `(dict ${de.records.map(r => `(${r.key} ${unparseL32(r.val)})`).join(" ")})`;
+
+
 export const unparseL32 = (exp: Program | Exp): string =>
     isBoolExp(exp) ? valueToString(exp.val) :
     isNumExp(exp) ? valueToString(exp.val) :
@@ -315,4 +331,6 @@ export const unparseL32 = (exp: Program | Exp): string =>
     isLetExp(exp) ? unparseLetExp(exp) :
     isDefineExp(exp) ? `(define ${exp.var.var} ${unparseL32(exp.val)})` :
     isProgram(exp) ? `(L32 ${unparseLExps(exp.exps)})` :
+    // ADDED: Dictionary special form
+    isDictExp(exp) ? unparseDictExp(exp) :
     exp;
