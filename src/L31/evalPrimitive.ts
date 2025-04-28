@@ -3,7 +3,7 @@ import { PrimOp } from "./L31-ast";
 import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, CompoundSExp, EmptySExp, Value } from "./L31-value";
 import { List, allT, first, isNonEmptyList, rest } from '../shared/list';
 import { isBoolean, isNumber, isString } from "../shared/type-predicates";
-import { Result, makeOk, makeFailure } from "../shared/result";
+import { Result, makeOk, makeFailure, bind } from "../shared/result";
 import { format } from "../shared/format";
 
 export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
@@ -41,102 +41,40 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     makeFailure(`Unknown primitive: ${proc.op}`);
 
 // ADDED: Checks if a value is a dictionary structure (a proper list).
-// A dictionary must be a proper list where each element is a (symbol . value) pair.
-const isDict = (v: any): boolean => {
-    let current = v;
-    // Walk through the list node by node
-    while (!isEmptySExp(current)) {
-        // If current is not a CompoundSExp, it's not a list -> not a dictionary
-        if (!isCompoundSExp(current)) {
-            return false;
-        }
-        const pair = current.val1;
-        // Each element in the list must itself be a (symbol . value) pair:
-        if (!isCompoundSExp(pair) || !isSymbolSExp(pair.val1)) {
-            return false;
-        }
-        current = current.val2;
-    }
-    return true;
-};
+const isDict = (current: any, keys: string[] = []): boolean =>
+    isEmptySExp(current) ? true :
+    !isCompoundSExp(current) ? false :
+    !isCompoundSExp(current.val1) || !isSymbolSExp(current.val1.val1) ? false :
+    keys.includes(current.val1.val1.val) ? false :
+    isDict(current.val2, [...keys, current.val1.val1.val]);
 
 // ADDED: Implementation of (dict <lit-exp>)
-const evalDict = (args: Value[]): Result<Value> => {
-    if (args.length !== 1) {
-        return makeFailure("dict expects exactly one argument");
-    }
-    const quoted = args[0];
+const evalDict = (args: Value[]): Result<Value> =>
+    args.length !== 1 ? makeFailure("dict expects exactly one argument") :
+    !isCompoundSExp(args[0]) ? makeFailure("dict expects a quoted list of pairs") :
+    bind(validateDict(args[0], []), _ => makeOk(args[0]));
 
-    if (!isCompoundSExp(quoted)) {
-        return makeFailure("dict expects a quoted list of pairs");
-    }
+const validateDict = (quoted: Value, keys: string[]): Result<true> =>
+    isEmptySExp(quoted) ? makeOk(true) :
+    !isCompoundSExp(quoted) ? makeFailure("dict expects a proper list") :
+    !isCompoundSExp(quoted.val1) ? makeFailure("Each element inside dict must be a pair") :
+    !isSymbolSExp(quoted.val1.val1) ? makeFailure("Each key must be a symbol") :
+    keys.includes(quoted.val1.val1.val) ? makeFailure(`Duplicate key: ${quoted.val1.val1.val}`) :
+    validateDict(quoted.val2, [...keys, quoted.val1.val1.val]);
 
-    // Walk through the linked list
-    let current: Value = quoted;
-    while (!isEmptySExp(current)) {
-        if (!isCompoundSExp(current)) {
-            return makeFailure("dict expects a proper list");
-        }
-
-        const pair = current.val1;
-        if (!isCompoundSExp(pair)) {
-            return makeFailure("Each element inside dict must be a pair");
-        }
-
-        if (!isSymbolSExp(pair.val1)) {
-            return makeFailure("Each key must be a symbol");
-        }
-
-        // Key is pair.val1
-        // Value is pair.val2
-        // No more validation required for the value itself.
-
-        current = current.val2; // Move to next in the list
-    }
-
-    // Successfully validated the dictionary
-    return makeOk(quoted);
-};
 
 // ADDED: Implementation of (get <dict-exp> <key-exp>)
-const evalGet = (args: Value[]): Result<Value> => {
-    if (args.length !== 2) {
-        return makeFailure("get expects exactly two arguments");
-    }
+const evalGet = (args: Value[]): Result<Value> =>
+    args.length !== 2 ? makeFailure("get expects exactly two arguments") :
+    !isDict(args[0]) ? makeFailure("First argument to get must be a dictionary") :
+    !isSymbolSExp(args[1]) ? makeFailure("Second argument to get must be a symbol") :
+    isEmptySExp(args[0]) ? makeFailure(`Key '${args[1].val}' not found in dictionary`) :
+    !isCompoundSExp(args[0]) ? makeFailure("Malformed dictionary: expected CompoundSExp") :
+    !isCompoundSExp(args[0].val1) ? makeFailure("Malformed dictionary entry: expected (key . value) pair") :
+    (isSymbolSExp(args[0].val1.val1) && args[0].val1.val1.val === args[1].val) ?
+        makeOk(args[0].val1.val2) :
+        evalGet([args[0].val2, args[1]]);
 
-    const dict = args[0];
-    const key = args[1];
-
-    if (!isDict(dict)) {
-        return makeFailure("First argument to get must be a dictionary");
-    }
-
-    if (!isSymbolSExp(key)) {
-        return makeFailure("Second argument to get must be a symbol");
-    }
-
-    let current: Value = dict;
-    while (!isEmptySExp(current)) {
-
-        if (!isCompoundSExp(current)) {
-            return makeFailure("Malformed dictionary: expected CompoundSExp");
-        }
-
-        const pair = current.val1; 
-
-        if (!isCompoundSExp(pair)) {
-            return makeFailure("Malformed dictionary entry: expected (key . value) pair");
-        }
-
-        if (isSymbolSExp(pair.val1) && pair.val1.val === key.val) {
-            return makeOk(pair.val2);
-        }
-
-        current = current.val2;
-    }
-
-    return makeFailure(`Key '${key.val}' not found in dictionary`);
-};
 
 const minusPrim = (args: Value[]): Result<number> => {
     // TODO complete
