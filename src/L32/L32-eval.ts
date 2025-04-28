@@ -1,14 +1,14 @@
 // L32-eval.ts
 import { map } from "ramda";
-import { isCExp, isLetExp } from "./L32-ast";
+import { isCExp, isDictExp, isLetExp } from "./L32-ast";
 import { BoolExp, CExp, Exp, IfExp, LitExp, NumExp,
-         PrimOp, ProcExp, Program, StrExp, VarDecl } from "./L32-ast";
+         PrimOp, ProcExp, Program, StrExp, VarDecl, DictExp } from "./L32-ast";
 import { isAppExp, isBoolExp, isDefineExp, isIfExp, isLitExp, isNumExp,
              isPrimOp, isProcExp, isStrExp, isVarRef } from "./L32-ast";
 import { makeBoolExp, makeLitExp, makeNumExp, makeProcExp, makeStrExp } from "./L32-ast";
 import { parseL32Exp } from "./L32-ast";
 import { applyEnv, makeEmptyEnv, makeEnv, Env } from "./L32-env";
-import { isClosure, makeClosure, Closure, Value } from "./L32-value";
+import { isClosure, makeClosure, Closure, Value, makeCompoundSExp, makeEmptySExp } from "./L32-value";
 import { first, rest, isEmpty, List, isNonEmptyList } from '../shared/list';
 import { isBoolean, isNumber, isString } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
@@ -34,6 +34,7 @@ const L32applicativeEval = (exp: CExp, env: Env): Result<Value> =>
                         bind(mapResult(param => L32applicativeEval(param, env), exp.rands), (rands: Value[]) =>
                             L32applyProcedure(rator, rands, env))) :
     isLetExp(exp) ? makeFailure('"let" not supported (yet)') :
+    isDictExp(exp) ? evalDict(exp, env) : // ADDED
     exp;
 
 export const isTrueValue = (x: Value): boolean =>
@@ -100,3 +101,18 @@ export const evalParse = (s: string): Result<Value> =>
     bind(p(s), (sexp: Sexp) => 
         bind(parseL32Exp(sexp), (exp: Exp) =>
             evalSequence([exp], makeEmptyEnv())));
+
+//ADDED 
+const evalDict = (dict: DictExp, env: Env): Result<Value> =>
+    // First: evaluate all values
+    mapv(
+        mapResult(
+            (entry) => bind(L32applicativeEval(entry.val, env), (v: Value) =>
+                makeOk(makeCompoundSExp(entry.key, v))
+            ),
+            dict.entries
+        ),
+        (pairs: Value[]) =>
+            pairs.reduceRight((acc, pair) => makeCompoundSExp(pair, acc), makeEmptySExp())
+    );
+
