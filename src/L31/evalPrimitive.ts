@@ -36,7 +36,7 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     // ADDED: New dictionary primitives
     proc.op === "dict" ? evalDict(args) :
     proc.op === "get" ? evalGet(args) :
-    proc.op === "dict?" ? makeOk(isDict(args[0])) :
+    proc.op === "dict?" ? makeOk(isDict(args[0], [])) :
 
     makeFailure(`Unknown primitive: ${proc.op}`);
 
