@@ -9,7 +9,7 @@ const evalP = (x: string): Result<Value> =>
     bind(parseL31(x), evalL31program);
 
 describe('Q21 Tests', () => {
-    
+
     it("Q21 test 1", () => {
         expect(evalP(`(L31 (get (dict '((a . 1) (b . 2))) 'a))`)).to.deep.equal(makeOk(1));
     });

@@ -41,8 +41,24 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
     makeFailure(`Unknown primitive: ${proc.op}`);
 
 // ADDED: Checks if a value is a dictionary structure (a proper list).
-const isDict = (v: any): boolean =>
-    isCompoundSExp(v) || isEmptySExp(v);
+// A dictionary must be a proper list where each element is a (symbol . value) pair.
+const isDict = (v: any): boolean => {
+    let current = v;
+    // Walk through the list node by node
+    while (!isEmptySExp(current)) {
+        // If current is not a CompoundSExp, it's not a list -> not a dictionary
+        if (!isCompoundSExp(current)) {
+            return false;
+        }
+        const pair = current.val1;
+        // Each element in the list must itself be a (symbol . value) pair:
+        if (!isCompoundSExp(pair) || !isSymbolSExp(pair.val1)) {
+            return false;
+        }
+        current = current.val2;
+    }
+    return true;
+};
 
 // ADDED: Implementation of (dict <lit-exp>)
 const evalDict = (args: Value[]): Result<Value> => {
