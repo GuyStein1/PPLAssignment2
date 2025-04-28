@@ -107,31 +107,32 @@ const evalGet = (args: Value[]): Result<Value> => {
     const dict = args[0];
     const key = args[1];
 
-    if (!isCompoundSExp(dict)) {
-        return makeFailure("First argument to get must be a dictionary (CompoundSExp)");
+    if (!isDict(dict)) {
+        return makeFailure("First argument to get must be a dictionary");
     }
 
     if (!isSymbolSExp(key)) {
         return makeFailure("Second argument to get must be a symbol");
     }
 
-    // Walk the list to find the key
     let current: Value = dict;
     while (!isEmptySExp(current)) {
+
         if (!isCompoundSExp(current)) {
-            return makeFailure("Malformed dictionary (not a proper list)");
+            return makeFailure("Malformed dictionary: expected CompoundSExp");
         }
 
-        const pair = current.val1;
+        const pair = current.val1; 
+
         if (!isCompoundSExp(pair)) {
-            return makeFailure("Dictionary entries must be pairs");
+            return makeFailure("Malformed dictionary entry: expected (key . value) pair");
         }
 
         if (isSymbolSExp(pair.val1) && pair.val1.val === key.val) {
             return makeOk(pair.val2);
         }
 
-        current = current.val2; // Move to next pair
+        current = current.val2;
     }
 
     return makeFailure(`Key '${key.val}' not found in dictionary`);
