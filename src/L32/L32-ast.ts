@@ -1,7 +1,7 @@
 // ===========================================================
 // AST type models
 import { map, zipWith } from "ramda";
-import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToString } from './L32-value'
+import { makeEmptySExp, makeSymbolSExp, SExpValue, makeCompoundSExp, valueToString, SymbolSExp } from './L32-value'
 import { first, second, rest, allT, isEmpty, isNonEmptyList, List, NonEmptyList } from "../shared/list";
 import { isArray, isString, isNumericString, isIdentifier } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
@@ -69,7 +69,8 @@ export type LetExp = {tag: "LetExp"; bindings: Binding[]; body: CExp[]; }
 export type LitExp = {tag: "LitExp"; val: SExpValue; }
 
 //ADDED: Dictionary special form
-export type DictExp = { tag: "DictExp"; records: { key: string; val: CExp }[] }; 
+export type DictEntry  = { tag: "DictEntry"; key: SymbolSExp; val: CExp; };
+export type DictExp = { tag: "DictExp"; entries: DictEntry[] }; 
 
 // Type value constructors for disjoint types
 export const makeProgram = (exps: Exp[]): Program => ({tag: "Program", exps: exps});
@@ -97,8 +98,8 @@ export const makeLitExp = (val: SExpValue): LitExp =>
     ({tag: "LitExp", val: val});
 
 //ADDED: Dictionary special form
-export const makeDictExp = (records: { key: string; val: CExp }[]): DictExp =>
-    ({ tag: "DictExp", records: records });
+export const makeDictExp = (entries: DictEntry[]): DictExp =>
+    ({ tag: "DictExp", entries: entries });
 
 // Type predicates for disjoint types
 export const isProgram = (x: any): x is Program => x.tag === "Program";
@@ -179,6 +180,7 @@ export const parseL32SpecialForm = (op: Sexp, params: Sexp[]): Result<CExp> =>
     op === "quote" ? 
         isNonEmptyList<Sexp>(params) ? parseLitExp(first(params)) :
         makeFailure(`Bad quote exp: ${params}`) :
+    op === "dict" ? parseDictExp(params) :
     makeFailure("Never");
 
 // DefineExp -> (define <varDecl> <CExp>)
@@ -290,6 +292,17 @@ export const parseSExp = (sexp: Sexp): Result<SExpValue> =>
         ) :
     makeFailure(`Bad sexp: ${sexp}`);
 
+// ADDED: Dictionary special form
+const parseDictExp = (params: Sexp[]): Result<DictExp> =>
+    mapv(mapResult(parseDictEntry, params), (entries: DictEntry[]) => makeDictExp(entries));
+
+const parseDictEntry = (sexp: Sexp): Result<DictEntry> =>
+    isNonEmptyList<Sexp>(sexp) && sexp.length === 2
+        ? (isString(first(sexp))
+            ? bind(parseL32CExp(second(sexp)), (val: CExp) =>
+                makeOk({ tag: "DictEntry", key: makeSymbolSExp(first(sexp) as string), val: val }))
+            : makeFailure(`Dict keys must be identifiers (symbols): ${format(first(sexp))}`))
+        : makeFailure(`Invalid dict entry format (expected 2 elements): ${format(sexp)}`);
 
 // ==========================================================================
 // Unparse: Map an AST to a concrete syntax string.
@@ -315,7 +328,7 @@ const unparseLetExp = (le: LetExp) : string =>
 
 // ADDED: Dictionary special form
 const unparseDictExp = (de: DictExp): string =>
-    `(dict ${de.records.map(r => `(${r.key} ${unparseL32(r.val)})`).join(" ")})`;
+    `(dict ${de.entries.map(r => `(${r.key.val} ${unparseL32(r.val)})`).join(" ")})`;
 
 
 export const unparseL32 = (exp: Program | Exp): string =>
