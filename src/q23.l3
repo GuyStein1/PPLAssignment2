@@ -1,5 +1,3 @@
-(define dict (lambda (x) x))
-
 (define make-error (lambda (msg) (cons 'error msg)))
 
 (define is-error?
@@ -14,6 +12,46 @@
         x
         (f x))))
 
+(define member?
+  (lambda (x lst)
+    (if (pair? lst)
+        (or (eq? x (car lst))
+            (member? x (cdr lst)))
+        #f)))
+
+(define has-duplicates?
+  (lambda (keys)
+    (if (pair? keys)
+        (if (member? (car keys) (cdr keys))
+            #t
+            (has-duplicates? (cdr keys)))
+        #f)))
+
+(define collect-keys
+  (lambda (x)
+    (if (pair? x)
+        (cons (car (car x)) (collect-keys (cdr x)))
+        '())))
+
+(define dict-structure-ok?
+  (lambda (x)
+    (if (pair? x)
+        (and (pair? (car x))
+             (symbol? (car (car x)))
+             (dict-structure-ok? (cdr x)))
+        (eq? x '()))))
+
+(define dict?
+  (lambda (x)
+    (and (dict-structure-ok? x)
+         (not (has-duplicates? (collect-keys x))))))
+
+(define dict
+  (lambda (x)
+    (if (dict? x)
+        x
+        (make-error "Invalid dictionary"))))
+
 (define get
   (lambda (d k)
     (if (pair? d)
@@ -21,11 +59,3 @@
             (cdr (car d))
             (get (cdr d) k))
         (make-error "Key not found"))))
-
-(define dict?
-  (lambda (x)
-    (if (pair? x)
-        (and (pair? (car x))
-             (symbol? (car (car x)))
-             (dict? (cdr x)))
-        (eq? x '()))))
