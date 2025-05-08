@@ -8,7 +8,7 @@ import { isAppExp, isBoolExp, isDefineExp, isIfExp, isLitExp, isNumExp,
 import { makeBoolExp, makeLitExp, makeNumExp, makeProcExp, makeStrExp } from "./L32-ast";
 import { parseL32Exp } from "./L32-ast";
 import { applyEnv, makeEmptyEnv, makeEnv, Env } from "./L32-env";
-import { isClosure, makeClosure, Closure, Value, makeCompoundSExp, makeEmptySExp } from "./L32-value";
+import { isClosure, makeClosure, Closure, Value, makeCompoundSExp, makeEmptySExp, isDict, Dict, isSymbolSExp, valueToString, CompoundSExp, isCompoundSExp, isSExp, makeDict, EmptySExp } from "./L32-value";
 import { first, rest, isEmpty, List, isNonEmptyList } from '../shared/list';
 import { isBoolean, isNumber, isString } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
@@ -51,6 +51,7 @@ const evalProc = (exp: ProcExp, env: Env): Result<Closure> =>
 const L32applyProcedure = (proc: Value, args: Value[], env: Env): Result<Value> =>
     isPrimOp(proc) ? applyPrimitive(proc, args) :
     isClosure(proc) ? applyClosure(proc, args, env) :
+    isDict(proc) ? applyDict(proc, args) : // ADDED
     makeFailure(`Bad procedure ${format(proc)}`);
 
 // Applications are computed by substituting computed
@@ -63,6 +64,8 @@ const valueToLitExp = (v: Value): NumExp | BoolExp | StrExp | LitExp | PrimOp | 
     isString(v) ? makeStrExp(v) :
     isPrimOp(v) ? v :
     isClosure(v) ? makeProcExp(v.params, v.body) :
+    isDict(v) ? 
+        (() => { throw new Error("Cannot pass dictionaries as arguments in substitution model") })() : // ADDED
     makeLitExp(v);
 
 const applyClosure = (proc: Closure, args: Value[], env: Env): Result<Value> => {
@@ -71,6 +74,36 @@ const applyClosure = (proc: Closure, args: Value[], env: Env): Result<Value> => 
     const litArgs = map(valueToLitExp, args);
     return evalSequence(substitute(body, vars, litArgs), env);
 }
+
+//ADDED
+const applyDict = (dict: Dict, args: Value[]): Result<Value> => {
+    if (args.length !== 1 || !isSymbolSExp(args[0])) {
+        return makeFailure(`Dict application expects a single symbol key, got ${args.map(valueToString).join(", ")}`);
+    }
+
+    const key = args[0].val;
+
+    const lookup = (cs: CompoundSExp): Value | undefined => {
+        if (!isCompoundSExp(cs)) return undefined;
+
+        const entry = cs.val1;
+        if (!isCompoundSExp(entry)) return undefined;
+
+        const entryKey = entry.val1;
+        const entryVal = entry.val2;
+
+        if (isSymbolSExp(entryKey) && entryKey.val === key) {
+            return entryVal;
+        }
+
+        return isCompoundSExp(cs.val2) ? lookup(cs.val2) : undefined;
+    };
+
+    const val = lookup(dict.entries);
+    return val !== undefined ? makeOk(val) : makeFailure(`Key '${key}' not found in dictionary`);
+};
+
+
 
 // Evaluate a sequence of expressions (in a program)
 export const evalSequence = (seq: List<Exp>, env: Env): Result<Value> =>
@@ -103,16 +136,28 @@ export const evalParse = (s: string): Result<Value> =>
             evalSequence([exp], makeEmptyEnv())));
 
 //ADDED 
-const evalDict = (dict: DictExp, env: Env): Result<Value> =>
-    // First: evaluate all values
-    mapv(
-        mapResult(
-            (entry) => bind(L32applicativeEval(entry.val, env), (v: Value) =>
-                makeOk(makeCompoundSExp(entry.key, v))
-            ),
-            dict.entries
-        ),
-        (pairs: Value[]) =>
-            pairs.reduceRight((acc, pair) => makeCompoundSExp(pair, acc), makeEmptySExp())
+const evalDict = (dict: DictExp, env: Env): Result<Value> => {
+    const entryResults: Result<CompoundSExp[]> = mapResult(
+        (entry) =>
+            bind(L32applicativeEval(entry.val, env), (v: Value) => {
+                if (!isSExp(v)) {
+                    return makeFailure(`Dictionary values must be S-expressions, got ${JSON.stringify(v)}`);
+                }
+                return makeOk(makeCompoundSExp(entry.key, v));
+            }),
+        dict.entries
     );
+
+    return bind(entryResults, (pairs: CompoundSExp[]) => {
+        const list = pairs.reduceRight<CompoundSExp | EmptySExp>(
+            (acc, pair) => makeCompoundSExp(pair, acc),
+            makeEmptySExp()
+        );
+        return makeOk(makeDict(list as CompoundSExp));
+    });
+};
+
+
+
+
 

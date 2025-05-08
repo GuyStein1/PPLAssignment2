@@ -3,12 +3,12 @@
 
 import { isPrimOp, CExp, PrimOp, VarDecl } from './L32-ast';
 import { isNumber, isArray, isString } from '../shared/type-predicates';
-import { append } from 'ramda';
+import { append, is } from 'ramda';
 
-export type Value = SExpValue;
+export type Value = SExpValue | Dict;
 
-export type Functional = PrimOp | Closure;
-export const isFunctional = (x: any): x is Functional => isPrimOp(x) || isClosure(x);
+export type Functional = PrimOp | Closure | Dict; // Added Dict type
+export const isFunctional = (x: any): x is Functional => isPrimOp(x) || isClosure(x) || isDict(x);
 
 // ========================================================
 // Closure for L3
@@ -35,6 +35,17 @@ export type SymbolSExp = {
     tag: "SymbolSExp";
     val: string;
 }
+
+//Added Dict type
+export type Dict = {
+    tag: "Dict";
+    entries: CompoundSExp; // The linked list of (key . value) pairs
+};
+export const makeDict = (entries: CompoundSExp): Dict =>
+    ({ tag: "Dict", entries: entries });
+
+export const isDict = (x: any): x is Dict =>
+    x.tag === "Dict";
 
 export type SExpValue = number | boolean | string | PrimOp | Closure | SymbolSExp | EmptySExp | CompoundSExp;
 export const isSExp = (x: any): x is SExpValue =>
@@ -80,4 +91,5 @@ export const valueToString = (val: Value): string =>
     isSymbolSExp(val) ? val.val :
     isEmptySExp(val) ? "'()" :
     isCompoundSExp(val) ? compoundSExpToString(val) :
+    isDict(val) ? `dict(${compoundSExpToString(val.entries)})` : // ADDED
     val;
