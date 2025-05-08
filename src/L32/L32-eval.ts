@@ -8,7 +8,7 @@ import { isAppExp, isBoolExp, isDefineExp, isIfExp, isLitExp, isNumExp,
 import { makeBoolExp, makeLitExp, makeNumExp, makeProcExp, makeStrExp } from "./L32-ast";
 import { parseL32Exp } from "./L32-ast";
 import { applyEnv, makeEmptyEnv, makeEnv, Env } from "./L32-env";
-import { isClosure, makeClosure, Closure, Value, makeCompoundSExp, makeEmptySExp, isDict, Dict, isSymbolSExp, valueToString, CompoundSExp, isCompoundSExp, isSExp, makeDict, EmptySExp } from "./L32-value";
+import { isClosure, makeClosure, Closure, Value, makeCompoundSExp, makeEmptySExp, isDict, Dict, isSymbolSExp, valueToString, CompoundSExp, isCompoundSExp, isSExp, makeDict, EmptySExp, SymbolSExp } from "./L32-value";
 import { first, rest, isEmpty, List, isNonEmptyList } from '../shared/list';
 import { isBoolean, isNumber, isString } from "../shared/type-predicates";
 import { Result, makeOk, makeFailure, bind, mapResult, mapv } from "../shared/result";
@@ -64,8 +64,7 @@ const valueToLitExp = (v: Value): NumExp | BoolExp | StrExp | LitExp | PrimOp | 
     isString(v) ? makeStrExp(v) :
     isPrimOp(v) ? v :
     isClosure(v) ? makeProcExp(v.params, v.body) :
-    isDict(v) ? 
-        (() => { throw new Error("Cannot pass dictionaries as arguments in substitution model") })() : // ADDED
+    isDict(v) ? makeLitExp(v): // ADDED
     makeLitExp(v);
 
 const applyClosure = (proc: Closure, args: Value[], env: Env): Result<Value> => {
@@ -136,26 +135,40 @@ export const evalParse = (s: string): Result<Value> =>
             evalSequence([exp], makeEmptyEnv())));
 
 //ADDED 
-const evalDict = (dict: DictExp, env: Env): Result<Value> => {
-    const entryResults: Result<CompoundSExp[]> = mapResult(
-        (entry) =>
-            bind(L32applicativeEval(entry.val, env), (v: Value) => {
-                if (!isSExp(v)) {
-                    return makeFailure(`Dictionary values must be S-expressions, got ${JSON.stringify(v)}`);
-                }
-                return makeOk(makeCompoundSExp(entry.key, v));
-            }),
-        dict.entries
+export const evalDict = (dict: DictExp, env: Env): Result<Value> =>
+    bind(
+        mapResult(
+            (entry): Result<CompoundSExp> =>
+                bind(L32applicativeEval(entry.val, env), (v: Value) =>
+                    isSExp(v) || isDict(v)
+                        ? makeOk(makeCompoundSExp(entry.key, v))
+                        : makeFailure(`Dictionary values must be S-expressions or dictionaries, got ${JSON.stringify(v)}`)
+                ),
+            dict.entries
+        ),
+        (pairs: CompoundSExp[]): Result<Value> => {
+            const keys: string[] = pairs
+                .map((p: CompoundSExp) => isSymbolSExp(p.val1) ? (p.val1 as SymbolSExp).val : "");
+            const duplicates = keys.filter((k: string, i: number) =>
+                k !== "" && keys.indexOf(k) !== i
+            );
+
+            return duplicates.length > 0
+                ? makeFailure(`Duplicate key '${duplicates[0]}' in dictionary`)
+                : makeOk(makeDict(
+                    pairs.reduceRight<CompoundSExp | EmptySExp>(
+                        (acc: CompoundSExp | EmptySExp, pair: CompoundSExp) =>
+                            makeCompoundSExp(pair, acc),
+                        makeEmptySExp()
+                    ) as CompoundSExp
+                ));
+        }
     );
 
-    return bind(entryResults, (pairs: CompoundSExp[]) => {
-        const list = pairs.reduceRight<CompoundSExp | EmptySExp>(
-            (acc, pair) => makeCompoundSExp(pair, acc),
-            makeEmptySExp()
-        );
-        return makeOk(makeDict(list as CompoundSExp));
-    });
-};
+
+    
+    
+
 
 
 

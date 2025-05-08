@@ -295,14 +295,15 @@ export const parseSExp = (sexp: Sexp): Result<SExpValue> =>
 // ADDED: Dictionary special form
 const parseDictExp = (params: Sexp[]): Result<DictExp> =>
     mapv(mapResult(parseDictEntry, params), (entries: DictEntry[]) => makeDictExp(entries));
-
+// ADDED: Dictionary special form
 const parseDictEntry = (sexp: Sexp): Result<DictEntry> =>
     isNonEmptyList<Sexp>(sexp) && sexp.length === 2
-        ? (isString(first(sexp))
+        ? (isString(first(sexp)) && isIdentifier(first(sexp))  
             ? bind(parseL32CExp(second(sexp)), (val: CExp) =>
-                makeOk({ tag: "DictEntry", key: makeSymbolSExp(first(sexp) as string), val: val }))
+                makeOk({ tag: "DictEntry", key: makeSymbolSExp(first(sexp) as string), val }))
             : makeFailure(`Dict keys must be identifiers (symbols): ${format(first(sexp))}`))
         : makeFailure(`Invalid dict entry format (expected 2 elements): ${format(sexp)}`);
+
 
 // ==========================================================================
 // Unparse: Map an AST to a concrete syntax string.
