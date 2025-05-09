@@ -1,0 +1,999 @@
+=== Final Transformed Program ===
+{
+  "tag": "Program",
+  "exps": [
+    {
+      "tag": "DefineExp",
+      "var": {
+        "tag": "VarDecl",
+        "var": "make-error"
+      },
+      "val": {
+        "tag": "ProcExp",
+        "args": [
+          {
+            "tag": "VarDecl",
+            "var": "msg"
+          }
+        ],
+        "body": [
+          {
+            "tag": "AppExp",
+            "rator": {
+              "tag": "PrimOp",
+              "op": "cons"
+            },
+            "rands": [
+              {
+                "tag": "LitExp",
+                "val": {
+                  "tag": "SymbolSExp",
+                  "val": "error"
+                }
+              },
+              {
+                "tag": "VarRef",
+                "var": "msg"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "DefineExp",
+      "var": {
+        "tag": "VarDecl",
+        "var": "is-error?"
+      },
+      "val": {
+        "tag": "ProcExp",
+        "args": [
+          {
+            "tag": "VarDecl",
+            "var": "x"
+          }
+        ],
+        "body": [
+          {
+            "tag": "IfExp",
+            "test": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "PrimOp",
+                "op": "pair?"
+              },
+              "rands": [
+                {
+                  "tag": "VarRef",
+                  "var": "x"
+                }
+              ]
+            },
+            "then": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "PrimOp",
+                "op": "eq?"
+              },
+              "rands": [
+                {
+                  "tag": "AppExp",
+                  "rator": {
+                    "tag": "PrimOp",
+                    "op": "car"
+                  },
+                  "rands": [
+                    {
+                      "tag": "VarRef",
+                      "var": "x"
+                    }
+                  ]
+                },
+                {
+                  "tag": "LitExp",
+                  "val": {
+                    "tag": "SymbolSExp",
+                    "val": "error"
+                  }
+                }
+              ]
+            },
+            "alt": {
+              "tag": "BoolExp",
+              "val": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "DefineExp",
+      "var": {
+        "tag": "VarDecl",
+        "var": "bind"
+      },
+      "val": {
+        "tag": "ProcExp",
+        "args": [
+          {
+            "tag": "VarDecl",
+            "var": "x"
+          },
+          {
+            "tag": "VarDecl",
+            "var": "f"
+          }
+        ],
+        "body": [
+          {
+            "tag": "IfExp",
+            "test": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "VarRef",
+                "var": "is-error?"
+              },
+              "rands": [
+                {
+                  "tag": "VarRef",
+                  "var": "x"
+                }
+              ]
+            },
+            "then": {
+              "tag": "VarRef",
+              "var": "x"
+            },
+            "alt": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "VarRef",
+                "var": "f"
+              },
+              "rands": [
+                {
+                  "tag": "VarRef",
+                  "var": "x"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "DefineExp",
+      "var": {
+        "tag": "VarDecl",
+        "var": "member?"
+      },
+      "val": {
+        "tag": "ProcExp",
+        "args": [
+          {
+            "tag": "VarDecl",
+            "var": "x"
+          },
+          {
+            "tag": "VarDecl",
+            "var": "lst"
+          }
+        ],
+        "body": [
+          {
+            "tag": "IfExp",
+            "test": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "PrimOp",
+                "op": "pair?"
+              },
+              "rands": [
+                {
+                  "tag": "VarRef",
+                  "var": "lst"
+                }
+              ]
+            },
+            "then": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "PrimOp",
+                "op": "or"
+              },
+              "rands": [
+                {
+                  "tag": "AppExp",
+                  "rator": {
+                    "tag": "PrimOp",
+                    "op": "eq?"
+                  },
+                  "rands": [
+                    {
+                      "tag": "VarRef",
+                      "var": "x"
+                    },
+                    {
+                      "tag": "AppExp",
+                      "rator": {
+                        "tag": "PrimOp",
+                        "op": "car"
+                      },
+                      "rands": [
+                        {
+                          "tag": "VarRef",
+                          "var": "lst"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "AppExp",
+                  "rator": {
+                    "tag": "VarRef",
+                    "var": "member?"
+                  },
+                  "rands": [
+                    {
+                      "tag": "VarRef",
+                      "var": "x"
+                    },
+                    {
+                      "tag": "AppExp",
+                      "rator": {
+                        "tag": "PrimOp",
+                        "op": "cdr"
+                      },
+                      "rands": [
+                        {
+                          "tag": "VarRef",
+                          "var": "lst"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "alt": {
+              "tag": "BoolExp",
+              "val": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "DefineExp",
+      "var": {
+        "tag": "VarDecl",
+        "var": "has-duplicates?"
+      },
+      "val": {
+        "tag": "ProcExp",
+        "args": [
+          {
+            "tag": "VarDecl",
+            "var": "keys"
+          }
+        ],
+        "body": [
+          {
+            "tag": "IfExp",
+            "test": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "PrimOp",
+                "op": "pair?"
+              },
+              "rands": [
+                {
+                  "tag": "VarRef",
+                  "var": "keys"
+                }
+              ]
+            },
+            "then": {
+              "tag": "IfExp",
+              "test": {
+                "tag": "AppExp",
+                "rator": {
+                  "tag": "VarRef",
+                  "var": "member?"
+                },
+                "rands": [
+                  {
+                    "tag": "AppExp",
+                    "rator": {
+                      "tag": "PrimOp",
+                      "op": "car"
+                    },
+                    "rands": [
+                      {
+                        "tag": "VarRef",
+                        "var": "keys"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "AppExp",
+                    "rator": {
+                      "tag": "PrimOp",
+                      "op": "cdr"
+                    },
+                    "rands": [
+                      {
+                        "tag": "VarRef",
+                        "var": "keys"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "then": {
+                "tag": "BoolExp",
+                "val": true
+              },
+              "alt": {
+                "tag": "AppExp",
+                "rator": {
+                  "tag": "VarRef",
+                  "var": "has-duplicates?"
+                },
+                "rands": [
+                  {
+                    "tag": "AppExp",
+                    "rator": {
+                      "tag": "PrimOp",
+                      "op": "cdr"
+                    },
+                    "rands": [
+                      {
+                        "tag": "VarRef",
+                        "var": "keys"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "alt": {
+              "tag": "BoolExp",
+              "val": false
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "DefineExp",
+      "var": {
+        "tag": "VarDecl",
+        "var": "collect-keys"
+      },
+      "val": {
+        "tag": "ProcExp",
+        "args": [
+          {
+            "tag": "VarDecl",
+            "var": "x"
+          }
+        ],
+        "body": [
+          {
+            "tag": "IfExp",
+            "test": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "PrimOp",
+                "op": "pair?"
+              },
+              "rands": [
+                {
+                  "tag": "VarRef",
+                  "var": "x"
+                }
+              ]
+            },
+            "then": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "PrimOp",
+                "op": "cons"
+              },
+              "rands": [
+                {
+                  "tag": "AppExp",
+                  "rator": {
+                    "tag": "PrimOp",
+                    "op": "car"
+                  },
+                  "rands": [
+                    {
+                      "tag": "AppExp",
+                      "rator": {
+                        "tag": "PrimOp",
+                        "op": "car"
+                      },
+                      "rands": [
+                        {
+                          "tag": "VarRef",
+                          "var": "x"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "AppExp",
+                  "rator": {
+                    "tag": "VarRef",
+                    "var": "collect-keys"
+                  },
+                  "rands": [
+                    {
+                      "tag": "AppExp",
+                      "rator": {
+                        "tag": "PrimOp",
+                        "op": "cdr"
+                      },
+                      "rands": [
+                        {
+                          "tag": "VarRef",
+                          "var": "x"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "alt": {
+              "tag": "LitExp",
+              "val": {
+                "tag": "EmptySExp"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "DefineExp",
+      "var": {
+        "tag": "VarDecl",
+        "var": "dict-structure-ok?"
+      },
+      "val": {
+        "tag": "ProcExp",
+        "args": [
+          {
+            "tag": "VarDecl",
+            "var": "x"
+          }
+        ],
+        "body": [
+          {
+            "tag": "IfExp",
+            "test": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "PrimOp",
+                "op": "pair?"
+              },
+              "rands": [
+                {
+                  "tag": "VarRef",
+                  "var": "x"
+                }
+              ]
+            },
+            "then": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "PrimOp",
+                "op": "and"
+              },
+              "rands": [
+                {
+                  "tag": "AppExp",
+                  "rator": {
+                    "tag": "PrimOp",
+                    "op": "pair?"
+                  },
+                  "rands": [
+                    {
+                      "tag": "AppExp",
+                      "rator": {
+                        "tag": "PrimOp",
+                        "op": "car"
+                      },
+                      "rands": [
+                        {
+                          "tag": "VarRef",
+                          "var": "x"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "AppExp",
+                  "rator": {
+                    "tag": "PrimOp",
+                    "op": "symbol?"
+                  },
+                  "rands": [
+                    {
+                      "tag": "AppExp",
+                      "rator": {
+                        "tag": "PrimOp",
+                        "op": "car"
+                      },
+                      "rands": [
+                        {
+                          "tag": "AppExp",
+                          "rator": {
+                            "tag": "PrimOp",
+                            "op": "car"
+                          },
+                          "rands": [
+                            {
+                              "tag": "VarRef",
+                              "var": "x"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "tag": "AppExp",
+                  "rator": {
+                    "tag": "VarRef",
+                    "var": "dict-structure-ok?"
+                  },
+                  "rands": [
+                    {
+                      "tag": "AppExp",
+                      "rator": {
+                        "tag": "PrimOp",
+                        "op": "cdr"
+                      },
+                      "rands": [
+                        {
+                          "tag": "VarRef",
+                          "var": "x"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            "alt": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "PrimOp",
+                "op": "eq?"
+              },
+              "rands": [
+                {
+                  "tag": "VarRef",
+                  "var": "x"
+                },
+                {
+                  "tag": "LitExp",
+                  "val": {
+                    "tag": "EmptySExp"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "DefineExp",
+      "var": {
+        "tag": "VarDecl",
+        "var": "dict?"
+      },
+      "val": {
+        "tag": "ProcExp",
+        "args": [
+          {
+            "tag": "VarDecl",
+            "var": "x"
+          }
+        ],
+        "body": [
+          {
+            "tag": "AppExp",
+            "rator": {
+              "tag": "PrimOp",
+              "op": "and"
+            },
+            "rands": [
+              {
+                "tag": "AppExp",
+                "rator": {
+                  "tag": "VarRef",
+                  "var": "dict-structure-ok?"
+                },
+                "rands": [
+                  {
+                    "tag": "VarRef",
+                    "var": "x"
+                  }
+                ]
+              },
+              {
+                "tag": "AppExp",
+                "rator": {
+                  "tag": "PrimOp",
+                  "op": "not"
+                },
+                "rands": [
+                  {
+                    "tag": "AppExp",
+                    "rator": {
+                      "tag": "VarRef",
+                      "var": "has-duplicates?"
+                    },
+                    "rands": [
+                      {
+                        "tag": "AppExp",
+                        "rator": {
+                          "tag": "VarRef",
+                          "var": "collect-keys"
+                        },
+                        "rands": [
+                          {
+                            "tag": "VarRef",
+                            "var": "x"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "DefineExp",
+      "var": {
+        "tag": "VarDecl",
+        "var": "dict"
+      },
+      "val": {
+        "tag": "ProcExp",
+        "args": [
+          {
+            "tag": "VarDecl",
+            "var": "x"
+          }
+        ],
+        "body": [
+          {
+            "tag": "IfExp",
+            "test": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "VarRef",
+                "var": "dict?"
+              },
+              "rands": [
+                {
+                  "tag": "VarRef",
+                  "var": "x"
+                }
+              ]
+            },
+            "then": {
+              "tag": "ProcExp",
+              "args": [
+                {
+                  "tag": "VarDecl",
+                  "var": "k"
+                }
+              ],
+              "body": [
+                {
+                  "tag": "AppExp",
+                  "rator": {
+                    "tag": "VarRef",
+                    "var": "get"
+                  },
+                  "rands": [
+                    {
+                      "tag": "VarRef",
+                      "var": "x"
+                    },
+                    {
+                      "tag": "VarRef",
+                      "var": "k"
+                    }
+                  ]
+                }
+              ]
+            },
+            "alt": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "VarRef",
+                "var": "make-error"
+              },
+              "rands": [
+                {
+                  "tag": "StrExp",
+                  "val": "Invalid dictionary"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "DefineExp",
+      "var": {
+        "tag": "VarDecl",
+        "var": "get"
+      },
+      "val": {
+        "tag": "ProcExp",
+        "args": [
+          {
+            "tag": "VarDecl",
+            "var": "d"
+          },
+          {
+            "tag": "VarDecl",
+            "var": "k"
+          }
+        ],
+        "body": [
+          {
+            "tag": "IfExp",
+            "test": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "PrimOp",
+                "op": "pair?"
+              },
+              "rands": [
+                {
+                  "tag": "VarRef",
+                  "var": "d"
+                }
+              ]
+            },
+            "then": {
+              "tag": "IfExp",
+              "test": {
+                "tag": "AppExp",
+                "rator": {
+                  "tag": "PrimOp",
+                  "op": "eq?"
+                },
+                "rands": [
+                  {
+                    "tag": "AppExp",
+                    "rator": {
+                      "tag": "PrimOp",
+                      "op": "car"
+                    },
+                    "rands": [
+                      {
+                        "tag": "AppExp",
+                        "rator": {
+                          "tag": "PrimOp",
+                          "op": "car"
+                        },
+                        "rands": [
+                          {
+                            "tag": "VarRef",
+                            "var": "d"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "VarRef",
+                    "var": "k"
+                  }
+                ]
+              },
+              "then": {
+                "tag": "AppExp",
+                "rator": {
+                  "tag": "PrimOp",
+                  "op": "cdr"
+                },
+                "rands": [
+                  {
+                    "tag": "AppExp",
+                    "rator": {
+                      "tag": "PrimOp",
+                      "op": "car"
+                    },
+                    "rands": [
+                      {
+                        "tag": "VarRef",
+                        "var": "d"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "alt": {
+                "tag": "AppExp",
+                "rator": {
+                  "tag": "VarRef",
+                  "var": "get"
+                },
+                "rands": [
+                  {
+                    "tag": "AppExp",
+                    "rator": {
+                      "tag": "PrimOp",
+                      "op": "cdr"
+                    },
+                    "rands": [
+                      {
+                        "tag": "VarRef",
+                        "var": "d"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "VarRef",
+                    "var": "k"
+                  }
+                ]
+              }
+            },
+            "alt": {
+              "tag": "AppExp",
+              "rator": {
+                "tag": "VarRef",
+                "var": "make-error"
+              },
+              "rands": [
+                {
+                  "tag": "StrExp",
+                  "val": "Key not found"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "AppExp",
+      "rator": {
+        "tag": "AppExp",
+        "rator": {
+          "tag": "VarRef",
+          "var": "dict"
+        },
+        "rands": [
+          {
+            "tag": "LitExp",
+            "val": {
+              "tag": "CompoundSexp",
+              "val1": {
+                "tag": "CompoundSexp",
+                "val1": {
+                  "tag": "SymbolSExp",
+                  "val": "a"
+                },
+                "val2": {
+                  "tag": "CompoundSexp",
+                  "val1": {
+                    "tag": "SymbolSExp",
+                    "val": "dict"
+                  },
+                  "val2": {
+                    "tag": "CompoundSexp",
+                    "val1": {
+                      "tag": "CompoundSexp",
+                      "val1": {
+                        "tag": "CompoundSexp",
+                        "val1": {
+                          "tag": "SymbolSExp",
+                          "val": "c"
+                        },
+                        "val2": {
+                          "tag": "CompoundSexp",
+                          "val1": 2,
+                          "val2": {
+                            "tag": "EmptySExp"
+                          }
+                        }
+                      },
+                      "val2": {
+                        "tag": "CompoundSexp",
+                        "val1": {
+                          "tag": "CompoundSexp",
+                          "val1": {
+                            "tag": "SymbolSExp",
+                            "val": "d"
+                          },
+                          "val2": {
+                            "tag": "CompoundSexp",
+                            "val1": 3,
+                            "val2": {
+                              "tag": "EmptySExp"
+                            }
+                          }
+                        },
+                        "val2": {
+                          "tag": "EmptySExp"
+                        }
+                      }
+                    },
+                    "val2": {
+                      "tag": "EmptySExp"
+                    }
+                  }
+                }
+              },
+              "val2": {
+                "tag": "CompoundSexp",
+                "val1": {
+                  "tag": "CompoundSexp",
+                  "val1": {
+                    "tag": "SymbolSExp",
+                    "val": "b"
+                  },
+                  "val2": {
+                    "tag": "CompoundSexp",
+                    "val1": {
+                      "tag": "SymbolSExp",
+                      "val": "+"
+                    },
+                    "val2": {
+                      "tag": "CompoundSexp",
+                      "val1": 1,
+                      "val2": {
+                        "tag": "CompoundSexp",
+                        "val1": 1,
+                        "val2": {
+                          "tag": "EmptySExp"
+                        }
+                      }
+                    }
+                  }
+                },
+                "val2": {
+                  "tag": "EmptySExp"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "rands": [
+        {
+          "tag": "LitExp",
+          "val": {
+            "tag": "SymbolSExp",
+            "val": "a"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -4,14 +4,20 @@ import {
     isIfExp, isProcExp, isAppExp, isLetExp, isLitExp,
     makeDefineExp, makeProgram, makeAppExp, makeVarRef, makeLitExp,
     makeIfExp, makeProcExp, makeLetExp,
-    isNumExp, isBoolExp, isStrExp, isPrimOp, isVarRef, VarDecl, makeVarDecl
+    isNumExp, isBoolExp, isStrExp, isPrimOp, isVarRef, VarDecl
 } from './L32/L32-ast';
 
 import {
     makeCompoundSExp, makeEmptySExp, SExpValue, makeSymbolSExp
 } from './L32/L32-value';
 
+import { readFileSync } from 'fs';
+import { parseL3 } from './L3/L3-ast';
+import { isOk } from './shared/result';
+
 import { map } from "ramda";
+
+import { writeFileSync, appendFileSync } from 'fs';
 
 /*
 Purpose: rewrite all occurrences of DictExp in a program to AppExp.
@@ -26,9 +32,31 @@ Purpose: Rewrite a single DictExp into AppExp form
 Signature: rewriteDict(e)
 Type: DictExp -> AppExp
 */
-const rewriteDict = (e: DictExp): CExp =>
-    makeAppExp(makeVarRef("dict"),
-               [makeLitExp(entriesToCompoundSExp(e.entries))]);
+const rewriteDict = (e: DictExp): CExp => {
+    // Build the quoted key-value list
+    const keyVals = e.entries.map(({ key, val }) => {
+        const kv = makeCompoundSExp(key, quoteCExpToSExp(val));
+        return kv;
+    });
+
+    // Wrap in a quoted list and create the application expression
+    const result = makeAppExp(
+        makeVarRef("dict"),
+        [makeLitExp(makeCompoundSExpList(keyVals))]
+    );
+
+    // Log the final result for debugging
+    appendFileSync('debug-log.txt', "\n--- Rewriting DictExp ---\n");
+    appendFileSync('debug-log.txt', JSON.stringify(result, null, 2) + "\n");
+
+    e.entries.forEach(({ key, val }) => {
+        const kv = makeCompoundSExp(key, quoteCExpToSExp(val));
+        appendFileSync('debug-log.txt', "Key-Value Pair:\n" + JSON.stringify(kv, null, 2) + "\n");
+    });
+
+    return result;
+};
+
 
 /*
 Purpose: Rewrite a top-level DefineExp or CExp
@@ -154,13 +182,24 @@ Purpose: Transform L32 program to L3
 Signature: L32ToL3(prog)
 Type: Program -> Program
 */
-export const L32toL3 = (prog : Program): Program => {
+export const L32toL3 = (prog: Program): Program => {
+    // 1. Apply Dict2App to remove all DictExp occurrences
     const transformed = Dict2App(prog).exps;
-    const dictDef = makeDefineExp(
-        makeVarDecl("dict"),
-        makeProcExp([makeVarDecl("x")], [makeVarRef("x")])
-    );
-    return makeProgram([dictDef, ...transformed]);
+
+    // 2. Read and parse the q23.l3 definitions
+    const q23Code = readFileSync("src/q23.l3", "utf-8");
+    const parsedPrelude = parseL3(q23Code);
+
+    if (!isOk(parsedPrelude)) {
+        throw new Error("Failed to parse q23.l3");
+    }
+
+    const fullProgram = makeProgram([...parsedPrelude.value.exps, ...transformed]);
+
+    writeFileSync("debug-log.txt", "=== Final Transformed Program ===\n");
+    appendFileSync("debug-log.txt", JSON.stringify(fullProgram, null, 2) + "\n");
+    // 3. Combine and return the unified program
+    return makeProgram([...parsedPrelude.value.exps, ...transformed]);
 };
 
 
