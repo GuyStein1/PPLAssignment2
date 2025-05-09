@@ -78,13 +78,12 @@ const rewriteAllDictCExp = (exp: CExp): CExp =>
             const newRator = rewriteAllDictCExp(exp.rator);        // Transform rator recursively
             const newRands = map(rewriteAllDictCExp, exp.rands);   // Transform all args
 
-            // Determine if we need to insert a get
+            // Determine if we need to insert a get (2 possible cases)
             const needsGetWrapper =
-                isDictExp(exp.rator) ||                             // raw (dict ...) call
-                (isAppExp(newRator) &&
-                 isVarRef(newRator.rator) &&
-                 newRator.rator.var === "dict") ||                 // already-transformed dict
-                isIfExp(exp.rator) || isLetExp(exp.rator);         // dynamic dict from if/let
+                // raw (dict ...) call
+                isDictExp(exp.rator) ||     
+                // dynamic dict from if/let  
+                isIfExp(exp.rator) || isLetExp(exp.rator);         
 
             return needsGetWrapper
                 ? makeAppExp(makeVarRef("get"), [newRator, ...newRands])
