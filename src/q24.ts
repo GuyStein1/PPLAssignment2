@@ -27,21 +27,13 @@ Purpose: Rewrite a single DictExp into AppExp form
 Signature: rewriteDict(e)
 Type: DictExp -> AppExp
 */
-const rewriteDict = (e: DictExp): CExp =>
+const rewriteDict = (exp: DictExp): CExp =>
     // Transform (dict (k v) ...) into (dict '<((k . v) ...)>) as an AppExp
     makeAppExp(
         makeVarRef("dict"),
-        [
-            makeLitExp(
-                e.entries
+        [makeLitExp(exp.entries
                     .map(({ key, val }) => makeCompoundSExp(key, quoteCExpToSExp(val)))
-                    .reduce<SExpValue>(
-                        (acc, pair) => makeCompoundSExp(pair, acc),
-                        makeEmptySExp()
-                    )
-            )
-        ]
-    );
+                    .reduce<SExpValue>((acc, pair) => makeCompoundSExp(pair, acc), makeEmptySExp()))]);
 
 /*
 Purpose: Rewrite a top-level DefineExp or CExp
@@ -94,21 +86,6 @@ export const entriesToCompoundSExp = (entries: DictEntry[]): SExpValue =>
            .reduceRight<SExpValue>( (pair, acc) => makeCompoundSExp(pair, acc), makeEmptySExp());
 
 /*
-Purpose: Convert a CExp (compound expression) to its quoted S-expression form.
-Signature: quoteCExpToSExp(e)
-Type: CExp -> SExpValue
-*/
-export const quoteCExpToSExp = (e: CExp): SExpValue =>
-    isNumExp(e) ? e.val :
-    isBoolExp(e) ? e.val :
-    isStrExp(e) ? e.val :
-    isLitExp(e) ? e.val :
-    isPrimOp(e) ? makeSymbolSExp(e.op) :
-    isVarRef(e) ? makeSymbolSExp(e.var) :
-    // For compound expressions: use unparseL32 to turn into string, then parse as quoted literal and extract SExp
-    (parseL3(`(L3 '${unparseL32(e)})`) as any).value.exps[0].val;
-
-/*
 Purpose: Build a nested compound S-expression list (linked list)
 Signature: makeCompoundSExpList(xs)
 Type: SExpValue[] -> SExpValue
@@ -116,6 +93,21 @@ Type: SExpValue[] -> SExpValue
 export const makeCompoundSExpList = (xs: SExpValue[]): SExpValue =>
     // Reduce a JS array [x1, x2, ..., xn] into (x1 . (x2 . ... (xn . ())))
     xs.reduceRight((acc, x) => makeCompoundSExp(x, acc), makeEmptySExp());
+
+/*
+Purpose: Convert a CExp (compound expression) to its quoted S-expression form.
+Signature: quoteCExpToSExp(e)
+Type: CExp -> SExpValue
+*/
+export const quoteCExpToSExp = (exp: CExp): SExpValue =>
+    isNumExp(exp) ? exp.val :
+    isBoolExp(exp) ? exp.val :
+    isStrExp(exp) ? exp.val :
+    isLitExp(exp) ? exp.val :
+    isPrimOp(exp) ? makeSymbolSExp(exp.op) :
+    isVarRef(exp) ? makeSymbolSExp(exp.var) :
+    // For compound expressions: use unparseL32 to turn into string, then parse as quoted literal and extract SExp
+    (parseL3(`(L3 '${unparseL32(exp)})`) as any).value.exps[0].val;
 
 /*
 Purpose: Convert an entire L32 program into a valid L3 program by transforming dicts
