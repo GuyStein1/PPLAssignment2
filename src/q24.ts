@@ -1,19 +1,15 @@
 import {
-    Program, Exp, CExp, DictExp, DictEntry,
-    isDefineExp, isDictExp,
-    isIfExp, isProcExp, isAppExp, isLetExp, isLitExp,
-    makeDefineExp, makeProgram, makeAppExp, makeVarRef, makeLitExp,
-    makeIfExp, makeProcExp, makeLetExp,
-    isNumExp, isBoolExp, isStrExp, isPrimOp, isVarRef, VarDecl
+    Program, Exp, CExp, DictExp, DictEntry, isDefineExp, 
+    isDictExp, isIfExp, isProcExp, isAppExp, isLetExp, isLitExp,
+    makeDefineExp, makeProgram, makeAppExp, makeVarRef, 
+    makeLitExp, makeIfExp, makeProcExp, makeLetExp, isNumExp, 
+    isBoolExp, isStrExp, isPrimOp, isVarRef, unparseL32
 } from './L32/L32-ast';
 
-import {
-    makeCompoundSExp, makeEmptySExp, SExpValue, makeSymbolSExp
-} from './L32/L32-value';
+import { makeCompoundSExp, makeEmptySExp, SExpValue, makeSymbolSExp } from './L32/L32-value';
 
 import { readFileSync } from 'fs';
 import { parseL3 } from './L3/L3-ast';
-import { isOk } from './shared/result';
 
 import { map } from "ramda";
 
@@ -54,9 +50,7 @@ Type: Exp -> Exp
 */
 const rewriteAllDictExp = (exp: Exp): Exp =>
     isDefineExp(exp)
-        // If it's a define, transform the body
         ? makeDefineExp(exp.var, rewriteAllDictCExp(exp.val))
-        // Otherwise it's just a CExp
         : rewriteAllDictCExp(exp);
 
 /*
@@ -74,32 +68,17 @@ const rewriteAllDictCExp = (exp: CExp): CExp =>
             rewriteAllDictCExp(exp.then),
             rewriteAllDictCExp(exp.alt))
     : isAppExp(exp)
-        ? (() => {
-            const newRator = rewriteAllDictCExp(exp.rator);        // Transform rator recursively
-            const newRands = map(rewriteAllDictCExp, exp.rands);   // Transform all args
-
-            // Determine if we need to insert a get (2 possible cases)
-            const needsGetWrapper =
-                // raw (dict ...) call
-                isDictExp(exp.rator) ||     
-                // dynamic dict from if/let  
-                isIfExp(exp.rator) || isLetExp(exp.rator);         
-
-            return needsGetWrapper
-                ? makeAppExp(makeVarRef("get"), [newRator, ...newRands])
-                : makeAppExp(newRator, newRands);
-        })()
+        // If the rator is a raw dict or a dynamic expression that could produce one,
+        // wrap the application in a (get ...) call. Otherwise, recurse as usual.
+        ? isDictExp(exp.rator) || isIfExp(exp.rator) || isLetExp(exp.rator)
+            ? makeAppExp(makeVarRef("get"), [rewriteAllDictCExp(exp.rator), ...map(rewriteAllDictCExp, exp.rands)])
+            : makeAppExp(rewriteAllDictCExp(exp.rator), map(rewriteAllDictCExp, exp.rands))
     : isProcExp(exp)
         // Recursively rewrite procedure body
         ? makeProcExp(exp.args, map(rewriteAllDictCExp, exp.body))
     : isLetExp(exp)
         // Rewrite let bindings and body
-        ? makeLetExp(
-            exp.bindings.map(b => ({
-                ...b,
-                val: rewriteAllDictCExp(b.val)
-            })),
-            map(rewriteAllDictCExp, exp.body))
+        ? makeLetExp(exp.bindings.map(b => ({...b, val: rewriteAllDictCExp(b.val)})), map(rewriteAllDictCExp, exp.body))
     : isLitExp(exp)
         ? makeLitExp(exp.val)
     : exp;
@@ -111,12 +90,8 @@ Type: DictEntry[] -> SExpValue
 */
 export const entriesToCompoundSExp = (entries: DictEntry[]): SExpValue =>
     // Convert each entry to (key . value) and reduce them to a pair-list
-    entries
-        .map(({ key, val }) => makeCompoundSExp(key, quoteCExpToSExp(val)))
-        .reduceRight<SExpValue>(
-            (pair, acc) => makeCompoundSExp(pair, acc),
-            makeEmptySExp()
-        );
+    entries.map(({ key, val }) => makeCompoundSExp(key, quoteCExpToSExp(val)))
+           .reduceRight<SExpValue>( (pair, acc) => makeCompoundSExp(pair, acc), makeEmptySExp());
 
 /*
 Purpose: Convert a CExp (compound expression) to its quoted S-expression form.
@@ -130,67 +105,8 @@ export const quoteCExpToSExp = (e: CExp): SExpValue =>
     isLitExp(e) ? e.val :
     isPrimOp(e) ? makeSymbolSExp(e.op) :
     isVarRef(e) ? makeSymbolSExp(e.var) :
-    
-    // Function application: recursively quote function and arguments
-    // e.g., (f x y) => (f x y)
-    isAppExp(e) ?
-        makeCompoundSExpList([
-            quoteCExpToSExp(e.rator),
-            ...e.rands.map(quoteCExpToSExp)
-        ]) :
-
-    // If-expression: represent as (if test then alt)
-    isIfExp(e) ?
-        makeCompoundSExpList([
-            makeSymbolSExp("if"),
-            quoteCExpToSExp(e.test),
-            quoteCExpToSExp(e.then),
-            quoteCExpToSExp(e.alt)
-        ]) :
-
-    // Lambda (procedure): represent as (lambda (args) body...)
-    isProcExp(e) ?
-        makeCompoundSExpList([
-            makeSymbolSExp("lambda"),
-            // Quote argument list: (x y z) => ('x 'y 'z)
-            makeCompoundSExpList(e.args.map((arg: VarDecl) => makeSymbolSExp(arg.var))),
-            // Quote body expressions
-            ...e.body.map(quoteCExpToSExp)
-        ]) :
-
-    // Let expression: represent as (let ((x val) ...) body...)
-    isLetExp(e) ?
-        makeCompoundSExpList([
-            makeSymbolSExp("let"),
-            // Quote each binding pair: ((x val) (y val) ...)
-            makeCompoundSExpList(
-                e.bindings.map(b =>
-                    makeCompoundSExpList([
-                        makeSymbolSExp(b.var.var),
-                        quoteCExpToSExp(b.val)
-                    ])
-                )
-            ),
-            // Quote body expressions
-            ...e.body.map(quoteCExpToSExp)
-        ]) :
-
-    // Dictionary: represent as (dict (key val) (key val) ...)
-    isDictExp(e) ?  
-        makeCompoundSExpList([
-            makeSymbolSExp("dict"),
-            // Quote each key-value pair as (k v)
-            ...e.entries.map(({ key, val }) =>
-                makeCompoundSExpList([
-                    key,
-                    quoteCExpToSExp(val)
-                ])
-            )
-        ]) :
-
-    // Fallback: if we reached here, we encountered an unsupported expression
-    (() => { throw new Error(`Cannot quote non-literal expression`); })();
-
+    // For compound expressions: use unparseL32 to turn into string, then parse as quoted literal and extract SExp
+    (parseL3(`(L3 '${unparseL32(e)})`) as any).value.exps[0].val;
 
 /*
 Purpose: Build a nested compound S-expression list (linked list)
@@ -203,21 +119,11 @@ export const makeCompoundSExpList = (xs: SExpValue[]): SExpValue =>
 
 /*
 Purpose: Convert an entire L32 program into a valid L3 program by transforming dicts
-Signature: L32ToL3(prog)
+Signature: L32toL3(prog)
 Type: Program -> Program
 */
-export const L32toL3 = (prog: Program): Program => {
-    const transformed = Dict2App(prog).exps; // Step 1: rewrite all dict expressions
-
-    // Step 2: parse q23.l3 definitions as the prelude
-    const q23Code = readFileSync("src/q23.l3", "utf-8");
-    const wrappedCode = `(L3 ${q23Code})`;
-    const parsedPrelude = parseL3(wrappedCode);
-
-    // Step 3: check for parse errors
-    if (!isOk(parsedPrelude))
-        throw new Error("Failed to parse q23.l3");
-
-    // Step 4: merge and return the full program
-    return makeProgram([...parsedPrelude.value.exps, ...transformed]);
-};
+export const L32toL3 = (prog: Program): Program =>
+    makeProgram([
+        ...((parseL3(`(L3 ${readFileSync("src/q23.l3", "utf-8")})`) as any).value.exps),
+        ...Dict2App(prog).exps
+    ]);
