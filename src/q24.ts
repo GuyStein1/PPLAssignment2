@@ -17,8 +17,6 @@ import { isOk } from './shared/result';
 
 import { map } from "ramda";
 
-import { writeFileSync, appendFileSync } from 'fs';
-
 /*
 Purpose: rewrite all occurrences of DictExp in a program to AppExp.
 Signature: Dict2App (exp)
@@ -102,8 +100,6 @@ const rewriteAllDictCExp = (exp: CExp): CExp =>
         ? makeLitExp(exp.val)
     : exp;
 
-
-
 /*
 Purpose: Convert list of DictEntry to nested compound S-expression
 Signature: entriesToCompoundSExp(entries)
@@ -118,7 +114,6 @@ export const entriesToCompoundSExp = (entries: DictEntry[]): SExpValue =>
             (pair, acc) => makeCompoundSExp(pair, acc),
             makeEmptySExp()
         );
-
 
 /*
 Purpose: Convert a CExp to a quoted SExpValue
@@ -209,10 +204,6 @@ export const L32toL3 = (prog: Program): Program => {
         throw new Error("Failed to parse q23.l3");
     }
 
-    const fullProgram = makeProgram([...parsedPrelude.value.exps, ...transformed]);
-
-    writeFileSync("debug-log.txt", "=== Final Transformed Program ===\n");
-    appendFileSync("debug-log.txt", JSON.stringify(fullProgram, null, 2) + "\n");
     // 3. Combine and return the unified program
     return makeProgram([...parsedPrelude.value.exps, ...transformed]);
 };
