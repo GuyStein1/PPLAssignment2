@@ -32,31 +32,22 @@ Purpose: Rewrite a single DictExp into AppExp form
 Signature: rewriteDict(e)
 Type: DictExp -> AppExp
 */
-const rewriteDict = (e: DictExp): CExp => {
-    // Build the quoted key-value list
-    const keyVals = e.entries.map(({ key, val }) => {
-        const kv = makeCompoundSExp(key, quoteCExpToSExp(val));
-        return kv;
-    });
-
-    // Wrap in a quoted list and create the application expression
-    const result = makeAppExp(
+const rewriteDict = (e: DictExp): CExp =>
+    makeAppExp(
         makeVarRef("dict"),
-        [makeLitExp(makeCompoundSExpList(keyVals))]
+        [
+            makeLitExp(
+                e.entries
+                    .map(({ key, val }) =>
+                        makeCompoundSExp(key, quoteCExpToSExp(val))
+                    )
+                    .reduce<SExpValue>(
+                        (acc, pair) => makeCompoundSExp(pair, acc),
+                        makeEmptySExp()
+                    )
+            )
+        ]
     );
-
-    // Log the final result for debugging
-    appendFileSync('debug-log.txt', "\n--- Rewriting DictExp ---\n");
-    appendFileSync('debug-log.txt', JSON.stringify(result, null, 2) + "\n");
-
-    e.entries.forEach(({ key, val }) => {
-        const kv = makeCompoundSExp(key, quoteCExpToSExp(val));
-        appendFileSync('debug-log.txt', "Key-Value Pair:\n" + JSON.stringify(kv, null, 2) + "\n");
-    });
-
-    return result;
-};
-
 
 /*
 Purpose: Rewrite a top-level DefineExp or CExp
@@ -74,20 +65,46 @@ Signature: rewriteAllDictCExp(exp)
 Type: CExp -> CExp
 */
 const rewriteAllDictCExp = (exp: CExp): CExp =>
-    isDictExp(exp) ? rewriteDict(exp) :
-    isIfExp(exp)   ? makeIfExp(rewriteAllDictCExp(exp.test),
-                               rewriteAllDictCExp(exp.then),
-                               rewriteAllDictCExp(exp.alt)) :
-    isAppExp(exp)  ? makeAppExp(rewriteAllDictCExp(exp.rator),
-                                map(rewriteAllDictCExp, exp.rands)) :
-    isProcExp(exp) ? makeProcExp(exp.args,
-                                 map(rewriteAllDictCExp, exp.body)) :
-    isLetExp(exp)  ? makeLetExp(exp.bindings.map(b => ({
-                                ...b, val: rewriteAllDictCExp(b.val)
-                              })),
-                                map(rewriteAllDictCExp, exp.body)) :
-    isLitExp(exp)  ? makeLitExp(exp.val) :
-    exp;
+    isDictExp(exp)
+        ? rewriteDict(exp)
+    : isIfExp(exp)
+        ? makeIfExp(
+            rewriteAllDictCExp(exp.test),
+            rewriteAllDictCExp(exp.then),
+            rewriteAllDictCExp(exp.alt))
+    : isAppExp(exp)
+        ? (
+            // Case 1: raw ( (dict ...) key ) 
+            isDictExp(exp.rator)
+            ||
+            // Case 2: already-transformed ( (dict '(...)) key )
+            (isAppExp(exp.rator) &&
+             isVarRef(exp.rator.rator) &&
+             exp.rator.rator.var === "dict")
+    
+            ? makeAppExp(
+                makeVarRef("get"),
+                [rewriteAllDictCExp(exp.rator), ...map(rewriteAllDictCExp, exp.rands)]
+            )
+            : makeAppExp(
+                rewriteAllDictCExp(exp.rator),
+                map(rewriteAllDictCExp, exp.rands)
+            )
+        )
+    : isProcExp(exp)
+        ? makeProcExp(exp.args, map(rewriteAllDictCExp, exp.body))
+    : isLetExp(exp)
+        ? makeLetExp(
+            exp.bindings.map(b => ({
+                ...b,
+                val: rewriteAllDictCExp(b.val)
+            })),
+            map(rewriteAllDictCExp, exp.body))
+    : isLitExp(exp)
+        ? makeLitExp(exp.val)
+    : exp;
+
+
 
 /*
 Purpose: Convert list of DictEntry to nested compound S-expression
@@ -174,7 +191,7 @@ Signature: makeCompoundSExpList(xs)
 Type: SExpValue[] -> SExpValue
 */
 export const makeCompoundSExpList = (xs: SExpValue[]): SExpValue =>
-    xs.reduceRight((acc, x) => makeCompoundSExp(x, acc), makeEmptySExp());
+    xs.reduceRight((acc, x) => makeCompoundSExp(x, acc), makeEmptySExp())
     
 
 /*
@@ -188,7 +205,8 @@ export const L32toL3 = (prog: Program): Program => {
 
     // 2. Read and parse the q23.l3 definitions
     const q23Code = readFileSync("src/q23.l3", "utf-8");
-    const parsedPrelude = parseL3(q23Code);
+    const wrappedCode = `(L3 ${q23Code})`;
+    const parsedPrelude = parseL3(wrappedCode);
 
     if (!isOk(parsedPrelude)) {
         throw new Error("Failed to parse q23.l3");

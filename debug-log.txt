@@ -699,32 +699,8 @@
               ]
             },
             "then": {
-              "tag": "ProcExp",
-              "args": [
-                {
-                  "tag": "VarDecl",
-                  "var": "k"
-                }
-              ],
-              "body": [
-                {
-                  "tag": "AppExp",
-                  "rator": {
-                    "tag": "VarRef",
-                    "var": "get"
-                  },
-                  "rands": [
-                    {
-                      "tag": "VarRef",
-                      "var": "x"
-                    },
-                    {
-                      "tag": "VarRef",
-                      "var": "k"
-                    }
-                  ]
-                }
-              ]
+              "tag": "VarRef",
+              "var": "x"
             },
             "alt": {
               "tag": "AppExp",
@@ -883,74 +859,20 @@
     {
       "tag": "AppExp",
       "rator": {
-        "tag": "AppExp",
-        "rator": {
-          "tag": "VarRef",
-          "var": "dict"
-        },
-        "rands": [
-          {
-            "tag": "LitExp",
-            "val": {
-              "tag": "CompoundSexp",
-              "val1": {
-                "tag": "CompoundSexp",
-                "val1": {
-                  "tag": "SymbolSExp",
-                  "val": "a"
-                },
-                "val2": {
-                  "tag": "CompoundSexp",
-                  "val1": {
-                    "tag": "SymbolSExp",
-                    "val": "dict"
-                  },
-                  "val2": {
-                    "tag": "CompoundSexp",
-                    "val1": {
-                      "tag": "CompoundSexp",
-                      "val1": {
-                        "tag": "CompoundSexp",
-                        "val1": {
-                          "tag": "SymbolSExp",
-                          "val": "c"
-                        },
-                        "val2": {
-                          "tag": "CompoundSexp",
-                          "val1": 2,
-                          "val2": {
-                            "tag": "EmptySExp"
-                          }
-                        }
-                      },
-                      "val2": {
-                        "tag": "CompoundSexp",
-                        "val1": {
-                          "tag": "CompoundSexp",
-                          "val1": {
-                            "tag": "SymbolSExp",
-                            "val": "d"
-                          },
-                          "val2": {
-                            "tag": "CompoundSexp",
-                            "val1": 3,
-                            "val2": {
-                              "tag": "EmptySExp"
-                            }
-                          }
-                        },
-                        "val2": {
-                          "tag": "EmptySExp"
-                        }
-                      }
-                    },
-                    "val2": {
-                      "tag": "EmptySExp"
-                    }
-                  }
-                }
-              },
-              "val2": {
+        "tag": "VarRef",
+        "var": "get"
+      },
+      "rands": [
+        {
+          "tag": "AppExp",
+          "rator": {
+            "tag": "VarRef",
+            "var": "dict"
+          },
+          "rands": [
+            {
+              "tag": "LitExp",
+              "val": {
                 "tag": "CompoundSexp",
                 "val1": {
                   "tag": "CompoundSexp",
@@ -978,14 +900,72 @@
                   }
                 },
                 "val2": {
-                  "tag": "EmptySExp"
+                  "tag": "CompoundSexp",
+                  "val1": {
+                    "tag": "CompoundSexp",
+                    "val1": {
+                      "tag": "SymbolSExp",
+                      "val": "a"
+                    },
+                    "val2": {
+                      "tag": "CompoundSexp",
+                      "val1": {
+                        "tag": "SymbolSExp",
+                        "val": "dict"
+                      },
+                      "val2": {
+                        "tag": "CompoundSexp",
+                        "val1": {
+                          "tag": "CompoundSexp",
+                          "val1": {
+                            "tag": "CompoundSexp",
+                            "val1": {
+                              "tag": "SymbolSExp",
+                              "val": "c"
+                            },
+                            "val2": {
+                              "tag": "CompoundSexp",
+                              "val1": 2,
+                              "val2": {
+                                "tag": "EmptySExp"
+                              }
+                            }
+                          },
+                          "val2": {
+                            "tag": "CompoundSexp",
+                            "val1": {
+                              "tag": "CompoundSexp",
+                              "val1": {
+                                "tag": "SymbolSExp",
+                                "val": "d"
+                              },
+                              "val2": {
+                                "tag": "CompoundSexp",
+                                "val1": 3,
+                                "val2": {
+                                  "tag": "EmptySExp"
+                                }
+                              }
+                            },
+                            "val2": {
+                              "tag": "EmptySExp"
+                            }
+                          }
+                        },
+                        "val2": {
+                          "tag": "EmptySExp"
+                        }
+                      }
+                    }
+                  },
+                  "val2": {
+                    "tag": "EmptySExp"
+                  }
                 }
               }
             }
-          }
-        ]
-      },
-      "rands": [
+          ]
+        },
         {
           "tag": "LitExp",
           "val": {
