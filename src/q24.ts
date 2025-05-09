@@ -117,5 +117,4 @@ Type: Program -> Program
 export const L32toL3 = (prog: Program): Program =>
     makeProgram([
         ...((parseL3(`(L3 ${readFileSync("src/q23.l3", "utf-8")})`) as any).value.exps),
-        ...Dict2App(prog).exps
-    ]);
+        ...Dict2App(prog).exps]);
