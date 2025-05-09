@@ -119,27 +119,27 @@ export const entriesToCompoundSExp = (entries: DictEntry[]): SExpValue =>
         );
 
 /*
-Purpose: Convert a CExp to a quoted SExpValue
+Purpose: Convert a CExp (compound expression) to its quoted S-expression form.
 Signature: quoteCExpToSExp(e)
 Type: CExp -> SExpValue
 */
 export const quoteCExpToSExp = (e: CExp): SExpValue =>
-    // Atomic expressions get returned as-is
     isNumExp(e) ? e.val :
     isBoolExp(e) ? e.val :
     isStrExp(e) ? e.val :
     isLitExp(e) ? e.val :
     isPrimOp(e) ? makeSymbolSExp(e.op) :
     isVarRef(e) ? makeSymbolSExp(e.var) :
-
-    // Application: recursively quote the function and its args
+    
+    // Function application: recursively quote function and arguments
+    // e.g., (f x y) => (f x y)
     isAppExp(e) ?
         makeCompoundSExpList([
             quoteCExpToSExp(e.rator),
             ...e.rands.map(quoteCExpToSExp)
         ]) :
 
-    // If-expression: represent as quoted list
+    // If-expression: represent as (if test then alt)
     isIfExp(e) ?
         makeCompoundSExpList([
             makeSymbolSExp("if"),
@@ -148,18 +148,21 @@ export const quoteCExpToSExp = (e: CExp): SExpValue =>
             quoteCExpToSExp(e.alt)
         ]) :
 
-    // Lambda: represent as (lambda (args) body...)
+    // Lambda (procedure): represent as (lambda (args) body...)
     isProcExp(e) ?
         makeCompoundSExpList([
             makeSymbolSExp("lambda"),
+            // Quote argument list: (x y z) => ('x 'y 'z)
             makeCompoundSExpList(e.args.map((arg: VarDecl) => makeSymbolSExp(arg.var))),
+            // Quote body expressions
             ...e.body.map(quoteCExpToSExp)
         ]) :
 
-    // Let-binding: represent as (let ((x val) ...) body...)
+    // Let expression: represent as (let ((x val) ...) body...)
     isLetExp(e) ?
         makeCompoundSExpList([
             makeSymbolSExp("let"),
+            // Quote each binding pair: ((x val) (y val) ...)
             makeCompoundSExpList(
                 e.bindings.map(b =>
                     makeCompoundSExpList([
@@ -168,13 +171,15 @@ export const quoteCExpToSExp = (e: CExp): SExpValue =>
                     ])
                 )
             ),
+            // Quote body expressions
             ...e.body.map(quoteCExpToSExp)
         ]) :
 
-    // Dict: represent as (dict (k1 v1) (k2 v2) ...)
+    // Dictionary: represent as (dict (key val) (key val) ...)
     isDictExp(e) ?  
         makeCompoundSExpList([
             makeSymbolSExp("dict"),
+            // Quote each key-value pair as (k v)
             ...e.entries.map(({ key, val }) =>
                 makeCompoundSExpList([
                     key,
@@ -183,8 +188,9 @@ export const quoteCExpToSExp = (e: CExp): SExpValue =>
             )
         ]) :
 
-    // Catch-all: fail on unquotable structures
+    // Fallback: if we reached here, we encountered an unsupported expression
     (() => { throw new Error(`Cannot quote non-literal expression`); })();
+
 
 /*
 Purpose: Build a nested compound S-expression list (linked list)
