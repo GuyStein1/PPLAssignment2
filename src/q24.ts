@@ -73,24 +73,22 @@ const rewriteAllDictCExp = (exp: CExp): CExp =>
             rewriteAllDictCExp(exp.then),
             rewriteAllDictCExp(exp.alt))
     : isAppExp(exp)
-        ? (
-            // Case 1: raw ( (dict ...) key ) 
-            isDictExp(exp.rator)
-            ||
-            // Case 2: already-transformed ( (dict '(...)) key )
-            (isAppExp(exp.rator) &&
-             isVarRef(exp.rator.rator) &&
-             exp.rator.rator.var === "dict")
+        ? (() => {
+            const newRator = rewriteAllDictCExp(exp.rator);
+            const newRands = map(rewriteAllDictCExp, exp.rands);
     
-            ? makeAppExp(
-                makeVarRef("get"),
-                [rewriteAllDictCExp(exp.rator), ...map(rewriteAllDictCExp, exp.rands)]
-            )
-            : makeAppExp(
-                rewriteAllDictCExp(exp.rator),
-                map(rewriteAllDictCExp, exp.rands)
-            )
-        )
+            const needsGetWrapper =
+                isDictExp(exp.rator) ||                                 // raw dict
+                (isAppExp(newRator) &&
+                 isVarRef(newRator.rator) &&
+                 newRator.rator.var === "dict") ||                      // transformed dict
+                isIfExp(exp.rator) ||                                   // dict comes from an if
+                isLetExp(exp.rator);                                    // or from let, etc.
+    
+            return needsGetWrapper
+                ? makeAppExp(makeVarRef("get"), [newRator, ...newRands])
+                : makeAppExp(newRator, newRands);
+        })()
     : isProcExp(exp)
         ? makeProcExp(exp.args, map(rewriteAllDictCExp, exp.body))
     : isLetExp(exp)
@@ -112,14 +110,15 @@ Signature: entriesToCompoundSExp(entries)
 Type: DictEntry[] -> SExpValue
 */
 export const entriesToCompoundSExp = (entries: DictEntry[]): SExpValue =>
-    entries.reduceRight<SExpValue>(
-        (acc, entry) =>
-            makeCompoundSExp(
-                makeCompoundSExp(entry.key, quoteCExpToSExp(entry.val)),
-                acc
-            ),
-        makeEmptySExp()
-    );
+    entries
+        .map(({ key, val }) =>
+            makeCompoundSExp(key, quoteCExpToSExp(val))
+        )
+        .reduceRight<SExpValue>(
+            (pair, acc) => makeCompoundSExp(pair, acc),
+            makeEmptySExp()
+        );
+
 
 /*
 Purpose: Convert a CExp to a quoted SExpValue
@@ -169,16 +168,14 @@ export const quoteCExpToSExp = (e: CExp): SExpValue =>
             ...e.body.map(quoteCExpToSExp)
         ]) :
 
-    isDictExp(e) ?
+    isDictExp(e) ?  
         makeCompoundSExpList([
             makeSymbolSExp("dict"),
-            makeCompoundSExpList(
-                e.entries.map((entry: DictEntry) =>
-                    makeCompoundSExpList([
-                        entry.key,
-                        quoteCExpToSExp(entry.val)
-                    ])
-                )
+            ...e.entries.map(({ key, val }) =>
+                makeCompoundSExpList([
+                    key,
+                    quoteCExpToSExp(val)
+                ])
             )
         ]) :
 

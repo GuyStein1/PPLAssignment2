@@ -918,42 +918,36 @@
                         "val1": {
                           "tag": "CompoundSexp",
                           "val1": {
-                            "tag": "CompoundSexp",
-                            "val1": {
-                              "tag": "SymbolSExp",
-                              "val": "c"
-                            },
-                            "val2": {
-                              "tag": "CompoundSexp",
-                              "val1": 2,
-                              "val2": {
-                                "tag": "EmptySExp"
-                              }
-                            }
+                            "tag": "SymbolSExp",
+                            "val": "c"
                           },
                           "val2": {
                             "tag": "CompoundSexp",
-                            "val1": {
-                              "tag": "CompoundSexp",
-                              "val1": {
-                                "tag": "SymbolSExp",
-                                "val": "d"
-                              },
-                              "val2": {
-                                "tag": "CompoundSexp",
-                                "val1": 3,
-                                "val2": {
-                                  "tag": "EmptySExp"
-                                }
-                              }
-                            },
+                            "val1": 2,
                             "val2": {
                               "tag": "EmptySExp"
                             }
                           }
                         },
                         "val2": {
-                          "tag": "EmptySExp"
+                          "tag": "CompoundSexp",
+                          "val1": {
+                            "tag": "CompoundSexp",
+                            "val1": {
+                              "tag": "SymbolSExp",
+                              "val": "d"
+                            },
+                            "val2": {
+                              "tag": "CompoundSexp",
+                              "val1": 3,
+                              "val2": {
+                                "tag": "EmptySExp"
+                              }
+                            }
+                          },
+                          "val2": {
+                            "tag": "EmptySExp"
+                          }
                         }
                       }
                     }
