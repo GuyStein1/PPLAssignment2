@@ -18,11 +18,12 @@ import { isOk } from './shared/result';
 import { map } from "ramda";
 
 /*
-Purpose: rewrite all occurrences of DictExp in a program to AppExp.
-Signature: Dict2App (exp)
+Purpose: Rewrite all occurrences of DictExp in a program to AppExp.
+Signature: Dict2App (prog)
 Type: Program -> Program
 */
 export const Dict2App = (prog: Program): Program =>
+    // Apply transformation to every top-level expression
     makeProgram(map(rewriteAllDictExp, prog.exps));
 
 /*
@@ -31,14 +32,13 @@ Signature: rewriteDict(e)
 Type: DictExp -> AppExp
 */
 const rewriteDict = (e: DictExp): CExp =>
+    // Transform (dict (k v) ...) into (dict '<((k . v) ...)>) as an AppExp
     makeAppExp(
         makeVarRef("dict"),
         [
             makeLitExp(
                 e.entries
-                    .map(({ key, val }) =>
-                        makeCompoundSExp(key, quoteCExpToSExp(val))
-                    )
+                    .map(({ key, val }) => makeCompoundSExp(key, quoteCExpToSExp(val)))
                     .reduce<SExpValue>(
                         (acc, pair) => makeCompoundSExp(pair, acc),
                         makeEmptySExp()
@@ -54,7 +54,9 @@ Type: Exp -> Exp
 */
 const rewriteAllDictExp = (exp: Exp): Exp =>
     isDefineExp(exp)
+        // If it's a define, transform the body
         ? makeDefineExp(exp.var, rewriteAllDictCExp(exp.val))
+        // Otherwise it's just a CExp
         : rewriteAllDictCExp(exp);
 
 /*
@@ -66,30 +68,33 @@ const rewriteAllDictCExp = (exp: CExp): CExp =>
     isDictExp(exp)
         ? rewriteDict(exp)
     : isIfExp(exp)
+        // Recursively transform all three branches
         ? makeIfExp(
             rewriteAllDictCExp(exp.test),
             rewriteAllDictCExp(exp.then),
             rewriteAllDictCExp(exp.alt))
     : isAppExp(exp)
         ? (() => {
-            const newRator = rewriteAllDictCExp(exp.rator);
-            const newRands = map(rewriteAllDictCExp, exp.rands);
-    
+            const newRator = rewriteAllDictCExp(exp.rator);        // Transform rator recursively
+            const newRands = map(rewriteAllDictCExp, exp.rands);   // Transform all args
+
+            // Determine if we need to insert a get
             const needsGetWrapper =
-                isDictExp(exp.rator) ||                                 // raw dict
+                isDictExp(exp.rator) ||                             // raw (dict ...) call
                 (isAppExp(newRator) &&
                  isVarRef(newRator.rator) &&
-                 newRator.rator.var === "dict") ||                      // transformed dict
-                isIfExp(exp.rator) ||                                   // dict comes from an if
-                isLetExp(exp.rator);                                    // or from let, etc.
-    
+                 newRator.rator.var === "dict") ||                 // already-transformed dict
+                isIfExp(exp.rator) || isLetExp(exp.rator);         // dynamic dict from if/let
+
             return needsGetWrapper
                 ? makeAppExp(makeVarRef("get"), [newRator, ...newRands])
                 : makeAppExp(newRator, newRands);
         })()
     : isProcExp(exp)
+        // Recursively rewrite procedure body
         ? makeProcExp(exp.args, map(rewriteAllDictCExp, exp.body))
     : isLetExp(exp)
+        // Rewrite let bindings and body
         ? makeLetExp(
             exp.bindings.map(b => ({
                 ...b,
@@ -106,10 +111,9 @@ Signature: entriesToCompoundSExp(entries)
 Type: DictEntry[] -> SExpValue
 */
 export const entriesToCompoundSExp = (entries: DictEntry[]): SExpValue =>
+    // Convert each entry to (key . value) and reduce them to a pair-list
     entries
-        .map(({ key, val }) =>
-            makeCompoundSExp(key, quoteCExpToSExp(val))
-        )
+        .map(({ key, val }) => makeCompoundSExp(key, quoteCExpToSExp(val)))
         .reduceRight<SExpValue>(
             (pair, acc) => makeCompoundSExp(pair, acc),
             makeEmptySExp()
@@ -121,6 +125,7 @@ Signature: quoteCExpToSExp(e)
 Type: CExp -> SExpValue
 */
 export const quoteCExpToSExp = (e: CExp): SExpValue =>
+    // Atomic expressions get returned as-is
     isNumExp(e) ? e.val :
     isBoolExp(e) ? e.val :
     isStrExp(e) ? e.val :
@@ -128,12 +133,14 @@ export const quoteCExpToSExp = (e: CExp): SExpValue =>
     isPrimOp(e) ? makeSymbolSExp(e.op) :
     isVarRef(e) ? makeSymbolSExp(e.var) :
 
+    // Application: recursively quote the function and its args
     isAppExp(e) ?
         makeCompoundSExpList([
             quoteCExpToSExp(e.rator),
             ...e.rands.map(quoteCExpToSExp)
         ]) :
 
+    // If-expression: represent as quoted list
     isIfExp(e) ?
         makeCompoundSExpList([
             makeSymbolSExp("if"),
@@ -142,6 +149,7 @@ export const quoteCExpToSExp = (e: CExp): SExpValue =>
             quoteCExpToSExp(e.alt)
         ]) :
 
+    // Lambda: represent as (lambda (args) body...)
     isProcExp(e) ?
         makeCompoundSExpList([
             makeSymbolSExp("lambda"),
@@ -149,6 +157,7 @@ export const quoteCExpToSExp = (e: CExp): SExpValue =>
             ...e.body.map(quoteCExpToSExp)
         ]) :
 
+    // Let-binding: represent as (let ((x val) ...) body...)
     isLetExp(e) ?
         makeCompoundSExpList([
             makeSymbolSExp("let"),
@@ -163,6 +172,7 @@ export const quoteCExpToSExp = (e: CExp): SExpValue =>
             ...e.body.map(quoteCExpToSExp)
         ]) :
 
+    // Dict: represent as (dict (k1 v1) (k2 v2) ...)
     isDictExp(e) ?  
         makeCompoundSExpList([
             makeSymbolSExp("dict"),
@@ -174,7 +184,7 @@ export const quoteCExpToSExp = (e: CExp): SExpValue =>
             )
         ]) :
 
-    // Fallback for safety
+    // Catch-all: fail on unquotable structures
     (() => { throw new Error(`Cannot quote non-literal expression`); })();
 
 /*
@@ -183,29 +193,26 @@ Signature: makeCompoundSExpList(xs)
 Type: SExpValue[] -> SExpValue
 */
 export const makeCompoundSExpList = (xs: SExpValue[]): SExpValue =>
-    xs.reduceRight((acc, x) => makeCompoundSExp(x, acc), makeEmptySExp())
-    
+    // Reduce a JS array [x1, x2, ..., xn] into (x1 . (x2 . ... (xn . ())))
+    xs.reduceRight((acc, x) => makeCompoundSExp(x, acc), makeEmptySExp());
 
 /*
-Purpose: Transform L32 program to L3
+Purpose: Convert an entire L32 program into a valid L3 program by transforming dicts
 Signature: L32ToL3(prog)
 Type: Program -> Program
 */
 export const L32toL3 = (prog: Program): Program => {
-    // 1. Apply Dict2App to remove all DictExp occurrences
-    const transformed = Dict2App(prog).exps;
+    const transformed = Dict2App(prog).exps; // Step 1: rewrite all dict expressions
 
-    // 2. Read and parse the q23.l3 definitions
+    // Step 2: parse q23.l3 definitions as the prelude
     const q23Code = readFileSync("src/q23.l3", "utf-8");
     const wrappedCode = `(L3 ${q23Code})`;
     const parsedPrelude = parseL3(wrappedCode);
 
-    if (!isOk(parsedPrelude)) {
+    // Step 3: check for parse errors
+    if (!isOk(parsedPrelude))
         throw new Error("Failed to parse q23.l3");
-    }
 
-    // 3. Combine and return the unified program
+    // Step 4: merge and return the full program
     return makeProgram([...parsedPrelude.value.exps, ...transformed]);
 };
-
-
