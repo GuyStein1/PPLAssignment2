@@ -49,8 +49,6 @@
                             (dict-structure-ok? (cdr x)))
                         (dict-structure-ok? (cdr x)))))))))
 
-
-
 (define dict?
   (lambda (x)
     (and (dict-structure-ok? x)
