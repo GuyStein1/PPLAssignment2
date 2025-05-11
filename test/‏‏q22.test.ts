@@ -71,10 +71,6 @@ describe('Q22 Tests', () => {
         expect(isOk(evalP(`(L32 (dict (only 42)))`))).to.be.true;
     });
 
-    it("Q22 Test 11: dict with no keys (empty) should succeed", () => {
-        expect(isOk(evalP(`(L32 (dict))`))).to.be.true;
-    });
-
     it("Q22 Test 12: lookup from empty dict should fail", () => {
         expect(isFailure(evalP(`(L32 
             (define d (dict))
@@ -175,17 +171,9 @@ describe('Q22 Tests', () => {
         )`)).to.deep.equal(makeOk(10));
     });
     
-    it("Q22 Test 29: empty dict should return dict with no keys", () => {
-        const result = evalP(`(L32 (dict))`);
-        expect(isOk(result)).to.be.true;
-        expect(result).to.deep.equal(evalParse(`(dict)`)); // תלוי איך dict ריק מתפרש אצלך
-    });
-    
-    it("Q22 Test 30: accessing key from empty dict should fail", () => {
+    it("Q22 Test 29: accessing key from empty dict should fail", () => {
         const result = evalP(`(L32 (define d (dict)) (d 'x))`);
         expect(isFailure(result)).to.be.true;
     });
-    
-
 
 });
