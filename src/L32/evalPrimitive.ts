@@ -1,9 +1,9 @@
 import { reduce } from "ramda";
 import { PrimOp } from "./L32-ast";
-import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, CompoundSExp, EmptySExp, Value, isSExp, SExpValue} from "./L32-value";
+import { isCompoundSExp, isEmptySExp, isSymbolSExp, makeCompoundSExp, makeEmptySExp, CompoundSExp, EmptySExp, Value } from "./L32-value";
 import { List, allT, first, isNonEmptyList, rest } from '../shared/list';
 import { isBoolean, isNumber, isString } from "../shared/type-predicates";
-import { Result, makeOk, makeFailure, bind} from "../shared/result";
+import { Result, makeOk, makeFailure } from "../shared/result";
 import { format } from "../shared/format";
 
 export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
@@ -23,10 +23,10 @@ export const applyPrimitive = (proc: PrimOp, args: Value[]): Result<Value> =>
                                                                   makeFailure(`Arguments to "or" not booleans: ${format(args)}`) :
     proc.op === "eq?" ? makeOk(eqPrim(args)) :
     proc.op === "string=?" ? makeOk(args[0] === args[1]) :
-    proc.op === "cons" ? consPrim(args[0], args[1]) : //ADDED (changed)
+    proc.op === "cons" ? makeOk(consPrim(args[0], args[1])) :
     proc.op === "car" ? carPrim(args[0]) :
     proc.op === "cdr" ? cdrPrim(args[0]) :
-    proc.op === "list" ? listPrim(args) : //ADDED (changed)
+    proc.op === "list" ? makeOk(listPrim(args)) :
     proc.op === "pair?" ? makeOk(isPairPrim(args[0])) :
     proc.op === "number?" ? makeOk(typeof (args[0]) === 'number') :
     proc.op === "boolean?" ? makeOk(typeof (args[0]) === 'boolean') :
@@ -86,26 +86,12 @@ const cdrPrim = (v: Value): Result<Value> =>
     isCompoundSExp(v) ? makeOk(v.val2) :
     makeFailure(`Cdr: param is not compound ${format(v)}`);
 
-//ADDED (changed)
-const consPrim = (v1: Value, v2: Value): Result<CompoundSExp> =>
-    (!isSExp(v1) || !isSExp(v2))
-        ? makeFailure(`Arguments to 'cons' must be S-expressions, got ${format(v1)}, ${format(v2)}`)
-        : makeOk(makeCompoundSExp(v1, v2));
+const consPrim = (v1: Value, v2: Value): CompoundSExp =>
+    makeCompoundSExp(v1, v2);
 
-//ADDED (changed)
-export const listPrim = (vals: List<Value>): Result<SExpValue> =>
-    isNonEmptyList<Value>(vals)
-        ? (() => {
-            const head = first<Value>(vals);
-            const restList = rest<Value>(vals);
-            if (!isSExp(head)) {
-                return makeFailure(`list: value is not an S-expression: ${format(head)}`);
-            }
-            return bind(listPrim(restList), (tail) =>
-                makeOk(makeCompoundSExp(head, tail)));
-        })()
-        : makeOk(makeEmptySExp());
-
+export const listPrim = (vals: List<Value>): EmptySExp | CompoundSExp =>
+    isNonEmptyList<Value>(vals) ? makeCompoundSExp(first(vals), listPrim(rest(vals))) :
+    makeEmptySExp();
 
 const isPairPrim = (v: Value): boolean =>
     isCompoundSExp(v);
