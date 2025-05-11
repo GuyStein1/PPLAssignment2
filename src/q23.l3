@@ -35,11 +35,19 @@
 
 (define dict-structure-ok?
   (lambda (x)
-    (if (pair? x)
-        (and (pair? (car x))
-             (symbol? (car (car x)))
-             (dict-structure-ok? (cdr x)))
-        (eq? x '()))))
+    (if (eq? x '())
+        #t
+        (if (not (pair? x))
+            #f
+            (if (not (pair? (car x)))
+                #f
+                (if (not (symbol? (car (car x))))
+                    #f
+                    (if (pair? (cdr (car x)))
+                        #f
+                        (dict-structure-ok? (cdr x)))))))))
+
+
 
 (define dict?
   (lambda (x)
