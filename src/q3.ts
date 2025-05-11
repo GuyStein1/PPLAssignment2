@@ -26,7 +26,7 @@ const expToJS = (exp: Exp | Program): string => (
   : isBoolExp(exp)
     ? (exp.val ? "true" : "false")
   : isStrExp(exp)
-    ? `"${exp.val}"`
+    ? `'${exp.val}'`
   : isVarRef(exp)
     ? exp.var
   : isIfExp(exp)
@@ -48,9 +48,9 @@ const expToJS = (exp: Exp | Program): string => (
               : exp.rator.op === "eq?"
                 ? `(${exp.rands.map(expToJS).join(" === ")})`
               : exp.rator.op === "number?"
-                ? `(typeof ${exp.rands.map(expToJS)[0]} === "number")`
+                ? `(typeof(${exp.rands.map(expToJS)[0]}) === 'number')`
               : exp.rator.op === "boolean?"
-                ? `(typeof ${exp.rands.map(expToJS)[0]} === "boolean")`
+                ? `(typeof(${exp.rands.map(expToJS)[0]}) === 'boolean')`
               : ["+", "-", "*", "/", "<", ">"].includes(exp.rator.op)
                 ? `(${exp.rands.map(expToJS).join(" " + exp.rator.op + " ")})`
               : `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
