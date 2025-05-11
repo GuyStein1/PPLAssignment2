@@ -44,7 +44,9 @@
                 (if (not (symbol? (car (car x))))
                     #f
                     (if (pair? (cdr (car x)))
-                        #f
+                        (if (eq? '() (cdr (cdr (car x))))
+                            #f
+                            (dict-structure-ok? (cdr x)))
                         (dict-structure-ok? (cdr x)))))))))
 
 

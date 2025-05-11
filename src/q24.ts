@@ -62,7 +62,8 @@ const rewriteAllDictCExp = (exp: CExp): CExp =>
     : isAppExp(exp)
         // If the rator is a raw dict or a dynamic expression that could produce one,
         // wrap the application in a (get ...) call. Otherwise, recurse as usual.
-        ? isDictExp(exp.rator) || isIfExp(exp.rator) || isLetExp(exp.rator)
+        ? isDictExp(exp.rator) || 
+            isIfExp(exp.rator) || isLetExp(exp.rator)
             ? makeAppExp(makeVarRef("get"), [rewriteAllDictCExp(exp.rator), ...map(rewriteAllDictCExp, exp.rands)])
             : makeAppExp(rewriteAllDictCExp(exp.rator), map(rewriteAllDictCExp, exp.rands))
     : isProcExp(exp)
