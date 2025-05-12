@@ -5,9 +5,6 @@ import { Value } from "../src/L3/L3-value";
 import { Result, bind, makeOk } from "../src/shared/result";
 import { parseL3 } from "../src/L3/L3-ast";
 
-
-
-
 const q23: string = fs.readFileSync(__dirname + '/../src/q23.l3', { encoding: 'utf-8' });
 
 const evalP = (x: string): Result<Value> =>
@@ -65,7 +62,7 @@ describe('Q23 Tests', () => {
     });
     
     it("Q23 test 10", () => {
-        expect(evalP(`(L3 ` + q23 + ` (dict? (dict '())))`)).to.deep.equal(makeOk(true));
+        expect(evalP(`(L3 ` + q23 + ` (dict? '((a))))`)).to.deep.equal(makeOk(true));
     });
     
     it("Q23 test 11", () => {
@@ -96,26 +93,24 @@ describe('Q23 Tests', () => {
         expect(evalP(`(L3 ` + q23 + ` (dict? '((a b) (c d))))`)).to.deep.equal(makeOk(false));
     });
     
-    // it("Q23 test 18", () => {
-    //     expect(evalP(`(L3 ` + q23 + ` (is-error? make-error))`)).to.deep.equal(makeOk(true));
-    // });
+    it("Q23 test 18", () => {
+        expect(evalP(`(L3 ` + q23 + ` (is-error? (make-error "er")))`)).to.deep.equal(makeOk(true));
+    });
     
-    // it("Q23 test 19", () => {
-    //     expect(evalP(`(L3 ` + q23 + ` (is-error? (bind make-error (lambda (x) (+ x 100)))))`)).to.deep.equal(makeOk(true));
-    // });
+    it("Q23 test 19", () => {
+        expect(evalP(`(L3 ` + q23 + ` (is-error? (bind (make-error "er") (lambda (x) (+ x 100)))))`)).to.deep.equal(makeOk(true));
+    });
     
     it("Q23 test 20", () => {
         expect(evalP(`(L3 ` + q23 + ` (bind 7 (lambda (x) (+ x 10))))`)).to.deep.equal(makeOk(17));
     });
     
-    // it("Q23 test 21", () => {
-    //     expect(evalP(`(L3 ` + q23 + ` (is-error? (bind make-error (lambda (x) (* x x)))))`)).to.deep.equal(makeOk(true));
-    // });
+    it("Q23 test 21", () => {
+        expect(evalP(`(L3 ` + q23 + ` (is-error? (bind (make-error "er") (lambda (x) (* x x)))))`)).to.deep.equal(makeOk(true));
+    });
     
     it("Q23 test 22", () => {
         expect(evalP(`(L3 ` + q23 + ` (bind 5 (lambda (x) (* x x))))`)).to.deep.equal(makeOk(25));
     });
-    
-    
     
 });
