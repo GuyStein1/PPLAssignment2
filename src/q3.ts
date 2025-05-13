@@ -51,24 +51,38 @@ const expToJS = (exp: Exp | Program): string => (
   // application
   isAppExp(exp) ? (
     isPrimOp(exp.rator) ? (
-      exp.rator.op === "not" ? `(!${exp.rands.map(expToJS)[0]})` :
-      exp.rator.op === "and" ? `(${exp.rands.map(expToJS).join(" && ")})` :
-      exp.rator.op === "or"  ? `(${exp.rands.map(expToJS).join(" || ")})` :
-      ["=", "eq?"].includes(exp.rator.op)
-        ? `(${exp.rands.map(expToJS).join(" === ")})` :
-      ["+", "-", "*", "/", "<", ">"].includes(exp.rator.op)
-        ? `(${exp.rands.map(expToJS).join(" " + exp.rator.op + " ")})` :
-      exp.rator.op === "number?"
-        ? (a => `((${a}) => typeof(${a}) === 'number')(${a})`)(expToJS(exp.rands[0])) :
-      exp.rator.op === "boolean?"
-        ? (a => `((${a}) => typeof(${a}) === 'boolean')(${a})`)(expToJS(exp.rands[0])) :
-      // generic primitive call
-      `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
-    )
-    // user-defined call
-    : `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
-  ) :
+      // logical & arithmetic special forms (as before)
+      exp.rator.op === "not"
+        ? `(!${expToJS(exp.rands[0])})`
+      : exp.rator.op === "and"
+        ? `(${exp.rands.map(expToJS).join(" && ")})`
+      : exp.rator.op === "or"
+        ? `(${exp.rands.map(expToJS).join(" || ")})`
+      : ["=", "eq?"].includes(exp.rator.op)
+        ? `(${exp.rands.map(expToJS).join(" === ")})`
+      : ["+", "-", "*", "/", "<", ">"].includes(exp.rator.op)
+        ? `(${exp.rands.map(expToJS).join(" " + exp.rator.op + " ")})`
 
-  // should never reach here
-  ""
+      // number?  /  boolean?   →  arrow-form if arg is a bare variable,
+      //                           inline typeof otherwise
+      : exp.rator.op === "number?"
+        ? (isVarRef(exp.rands[0])
+            ? (v => `((${v}) => typeof(${v}) === 'number')(${v})`)
+                (expToJS(exp.rands[0]))
+            : `(typeof(${expToJS(exp.rands[0])}) === 'number')`)
+      : exp.rator.op === "boolean?"
+        ? (isVarRef(exp.rands[0])
+            ? (v => `((${v}) => typeof(${v}) === 'boolean')(${v})`)
+                (expToJS(exp.rands[0]))
+            : `(typeof(${expToJS(exp.rands[0])}) === 'boolean')`)
+
+      // fall-back: treat the primitive like an ordinary function
+      : `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
+    )
+    // user-defined procedure call
+    : `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
+  )
+
+  // unreachable
+  : ""
 );
