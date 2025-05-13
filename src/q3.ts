@@ -14,48 +14,61 @@ Signature: l2ToJS(l2AST)
 Type: [EXP | Program] => Result<string>
 */
 export const l2ToJS = (exp: Exp | Program): Result<string> =>
-    makeOk(expToJS(exp));
+  makeOk(expToJS(exp));
 
+/* Main translator */
 const expToJS = (exp: Exp | Program): string => (
-  isProgram(exp)
-    ? exp.exps.map(expToJS).join(";\n")
-  : isDefineExp(exp)
-    ? `const ${exp.var.var} = ${expToJS(exp.val)}`
-  : isNumExp(exp)
-    ? `${exp.val}`
-  : isBoolExp(exp)
-    ? (exp.val ? "true" : "false")
-  : isStrExp(exp)
-    ? `'${exp.val}'`
-  : isVarRef(exp)
-    ? exp.var
-  : isIfExp(exp)
-    ? `(${expToJS(exp.test)} ? ${expToJS(exp.then)} : ${expToJS(exp.alt)})`
-  : isProcExp(exp)
-    ? `((${exp.args.map((a: VarDecl) => a.var).join(",")}) => ${expToJS(exp.body[0])})`
-  : isAppExp(exp)
-    ? (
-        isPrimOp(exp.rator)
-          ? (
-              exp.rator.op === "not"
-                ? `(!${exp.rands.map(expToJS)[0]})`
-              : exp.rator.op === "and"
-                ? `(${exp.rands.map(expToJS).join(" && ")})`
-              : exp.rator.op === "or"
-                ? `(${exp.rands.map(expToJS).join(" || ")})`
-              : exp.rator.op === "="
-                ? `(${exp.rands.map(expToJS).join(" === ")})`
-              : exp.rator.op === "eq?"
-                ? `(${exp.rands.map(expToJS).join(" === ")})`
-              : exp.rator.op === "number?"
-                ? `(typeof(${exp.rands.map(expToJS)[0]}) === 'number')`
-              : exp.rator.op === "boolean?"
-                ? `(typeof(${exp.rands.map(expToJS)[0]}) === 'boolean')`
-              : ["+", "-", "*", "/", "<", ">"].includes(exp.rator.op)
-                ? `(${exp.rands.map(expToJS).join(" " + exp.rator.op + " ")})`
-              : `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
-            )
-            : `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
-      )
-    : ""
-)
+  // program  →  statement; statement; …
+  isProgram(exp) ? exp.exps.map(expToJS).join(";\n") :
+
+  // (define x e)  →  const x = e
+  isDefineExp(exp) ? `const ${exp.var.var} = ${expToJS(exp.val)}` :
+
+  // literals
+  isNumExp(exp) ? `${exp.val}` :
+  isBoolExp(exp) ? (exp.val ? "true" : "false") :
+  isStrExp(exp) ? `'${exp.val}'` :
+
+  // stand-alone primitive
+  isPrimOp(exp)
+    ? (exp.op === "number?"
+        ? "((x) => typeof(x) === 'number')"
+        : exp.op === "boolean?"
+          ? "((x) => typeof(x) === 'boolean')"
+          : exp.op) :
+
+  // variable reference
+  isVarRef(exp) ? exp.var :
+
+  // if  →  ternary
+  isIfExp(exp)
+    ? `(${expToJS(exp.test)} ? ${expToJS(exp.then)} : ${expToJS(exp.alt)})` :
+
+  // lambda  →  arrow fn
+  isProcExp(exp)
+    ? `((${exp.args.map((a: VarDecl) => a.var).join(",")}) => ${expToJS(exp.body[0])})` :
+
+  // application
+  isAppExp(exp) ? (
+    isPrimOp(exp.rator) ? (
+      exp.rator.op === "not" ? `(!${exp.rands.map(expToJS)[0]})` :
+      exp.rator.op === "and" ? `(${exp.rands.map(expToJS).join(" && ")})` :
+      exp.rator.op === "or"  ? `(${exp.rands.map(expToJS).join(" || ")})` :
+      ["=", "eq?"].includes(exp.rator.op)
+        ? `(${exp.rands.map(expToJS).join(" === ")})` :
+      ["+", "-", "*", "/", "<", ">"].includes(exp.rator.op)
+        ? `(${exp.rands.map(expToJS).join(" " + exp.rator.op + " ")})` :
+      exp.rator.op === "number?"
+        ? (a => `((${a}) => typeof(${a}) === 'number')(${a})`)(expToJS(exp.rands[0])) :
+      exp.rator.op === "boolean?"
+        ? (a => `((${a}) => typeof(${a}) === 'boolean')(${a})`)(expToJS(exp.rands[0])) :
+      // generic primitive call
+      `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
+    )
+    // user-defined call
+    : `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
+  ) :
+
+  // should never reach here
+  ""
+);
