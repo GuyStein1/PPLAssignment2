@@ -113,7 +113,7 @@ describe('Q3 Tests', () => {
     });
 
     it('Q3 test 7', () => {
-        expect(l2toJSResult(`(number? y)`)).to.deep.equal(makeOk(`((y) => typeof(y) === 'number')(y)`));
+        expect(l2toJSResult(`(number? y)`)).to.deep.equal(makeOk(`((x) => typeof(x) === 'number')(y)`));
     });
 
     it('Q3 test 8', () => {

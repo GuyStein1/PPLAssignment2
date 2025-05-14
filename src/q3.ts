@@ -51,33 +51,24 @@ const expToJS = (exp: Exp | Program): string => (
   // application
   isAppExp(exp) ? (
     isPrimOp(exp.rator) ? (
-      exp.rator.op === "not"
-        ? `(!${expToJS(exp.rands[0])})`
-      : exp.rator.op === "and"
-        ? `(${exp.rands.map(expToJS).join(" && ")})`
-      : exp.rator.op === "or"
-        ? `(${exp.rands.map(expToJS).join(" || ")})`
-      : ["=", "eq?"].includes(exp.rator.op)
-        ? `(${exp.rands.map(expToJS).join(" === ")})`
-      : ["+", "-", "*", "/", "<", ">"].includes(exp.rator.op)
-        ? `(${exp.rands.map(expToJS).join(" " + exp.rator.op + " ")})`
-      // number?  →  arrow-call form
-      : exp.rator.op === "number?"
-        ? (isVarRef(exp.rands[0])
-            ? (v => `((${v}) => typeof(${v}) === 'number')(${v})`)
-                (expToJS(exp.rands[0]))
-            : (arg => `((x) => typeof(x) === 'number')(${arg})`)
-                (expToJS(exp.rands[0])))
-      // boolean? →  arrow-call form
-      : exp.rator.op === "boolean?"
-        ? (isVarRef(exp.rands[0])
-            ? (v => `((${v}) => typeof(${v}) === 'boolean')(${v})`)
-                (expToJS(exp.rands[0]))
-            : (arg => `((x) => typeof(x) === 'boolean')(${arg})`)
-                (expToJS(exp.rands[0])))
-      // other primitives: treat as ordinary function call
-      : `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
-    )
+    exp.rator.op === "not"
+      ? `(!${expToJS(exp.rands[0])})`
+    : exp.rator.op === "and"
+      ? `(${exp.rands.map(expToJS).join(" && ")})`
+    : exp.rator.op === "or"
+      ? `(${exp.rands.map(expToJS).join(" || ")})`
+    : ["=", "eq?"].includes(exp.rator.op)
+      ? `(${exp.rands.map(expToJS).join(" === ")})`
+    : ["+", "-", "*", "/", "<", ">"].includes(exp.rator.op)
+      ? `(${exp.rands.map(expToJS).join(" " + exp.rator.op + " ")})`
+    // number?  /  boolean?  ⇒  always arrow-call with param 'x'
+    : exp.rator.op === "number?"
+      ? `((x) => typeof(x) === 'number')(${expToJS(exp.rands[0])})`
+    : exp.rator.op === "boolean?"
+      ? `((x) => typeof(x) === 'boolean')(${expToJS(exp.rands[0])})`
+    // every other primitive
+    : `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
+  )
     // user-defined procedure call
     : `${expToJS(exp.rator)}(${exp.rands.map(expToJS).join(",")})`
   )
