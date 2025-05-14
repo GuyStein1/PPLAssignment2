@@ -88,8 +88,28 @@ describe('Q3 Tests', () => {
         expect(l2toJSResult(`(number? x)`)).to.deep.equal(makeOk(`((x) => typeof(x) === 'number')(x)`));
     });
 
+    // it('Q3 test 6', () => {
+    //     expect(l2toJSResult(`(number? (> 2 1))`)).to.deep.equal(makeOk(`(typeof((2 > 1)) === 'number')`));
+    // });
+
+    // it('Q3 test 7', () => {
+    //     expect(l2toJSResult(`(number? y)`)).to.deep.equal(makeOk(`((y) => typeof(y) === 'number')(y)`));
+    // });
+
+    // it('Q3 test 8', () => {
+    //     expect(l2toJSResult(`(number? 5)`)).to.deep.equal(makeOk(`(typeof(5) === 'number')`));
+    // });
+
+    // it('Q3 test 9', () => {
+    //     expect(l2toJSResult(`(boolean? #t)`)).to.deep.equal(makeOk(`(typeof(true) === 'boolean')`));
+    // });
+
+    // it('Q3 test 10', () => {
+    //     expect(l2toJSResult(`(boolean? (lambda (y) (* x y)))`)).to.deep.equal(makeOk(`(typeof(((y) => (x * y))) === 'boolean')`));
+    // });
+
     it('Q3 test 6', () => {
-        expect(l2toJSResult(`(number? (> 2 1))`)).to.deep.equal(makeOk(`(typeof((2 > 1)) === 'number')`));
+        expect(l2toJSResult(`(number? (> 2 1))`)).to.deep.equal(makeOk(`((x) => typeof(x) === 'number')((2 > 1))`));
     });
 
     it('Q3 test 7', () => {
@@ -97,15 +117,16 @@ describe('Q3 Tests', () => {
     });
 
     it('Q3 test 8', () => {
-        expect(l2toJSResult(`(number? 5)`)).to.deep.equal(makeOk(`(typeof(5) === 'number')`));
+        expect(l2toJSResult(`(number? 5)`)).to.deep.equal(makeOk(`((x) => typeof(x) === 'number')(5)`));
     });
 
     it('Q3 test 9', () => {
-        expect(l2toJSResult(`(boolean? #t)`)).to.deep.equal(makeOk(`(typeof(true) === 'boolean')`));
+        expect(l2toJSResult(`(boolean? #t)`)).to.deep.equal(makeOk(`((x) => typeof(x) === 'boolean')(true)`));
     });
 
     it('Q3 test 10', () => {
-        expect(l2toJSResult(`(boolean? (lambda (y) (* x y)))`)).to.deep.equal(makeOk(`(typeof(((y) => (x * y))) === 'boolean')`));
+        expect(l2toJSResult(`(boolean? (lambda (y) (* x y)))`)).to.deep.equal(makeOk(`((x) => typeof(x) === 'boolean')(((y) => (x * y)))`));
     });
+
 
 });
